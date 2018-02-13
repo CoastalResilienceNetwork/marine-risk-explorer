@@ -48,7 +48,7 @@ define([
 		// TODO: Clear currently selected parcel button
 
 		return declare(PluginBase, {
-			toolbarName: 'Future Habitat',
+			toolbarName: 'Marine Risk Explorer',
 			resizable: false,
 			width: 425,
 			size: 'custom',
@@ -159,7 +159,7 @@ define([
 				this.$el.find('.export .print').on('click', function() {
 					TINY.box.show({
 				        animate: true,
-				        url: 'plugins/future-habitat-v2/print-setup.html',
+				        url: 'plugins/marine-risk-explorer/print-setup.html',
 				        fixed: true,
 				        width: 390,
 				        height: 330,
@@ -167,7 +167,7 @@ define([
 				        	self.center = self.map.extent.getCenter();
 				        	$('#generate-print').on('click', function() {
 								var link = $('<link />')
-									.attr('href', 'plugins/future-habitat-v2/custom-print.css')
+									.attr('href', 'plugins/marine-risk-explorer/custom-print.css')
 									.attr('rel', 'stylesheet')
 									.attr('class', 'future-habitat-custom-print');
 
@@ -252,7 +252,7 @@ define([
 				this.$el.find('.export .notes').on('click', function() {
 					TINY.box.show({
 				        animate: true,
-				        url: 'plugins/future-habitat-v2/notes.html',
+				        url: 'plugins/marine-risk-explorer/notes.html',
 				        fixed: true,
 				        width: 560,
 				        height: 700
