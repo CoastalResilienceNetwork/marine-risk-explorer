@@ -27,46 +27,28 @@
 
 /* Custom print dialog */
 
-#plugin-print-sandbox {
-    width: 100%;
-    height: 100%;
+#plugin-print-modal {
+	font-weight: bold;
+	font-size: 17px;
 }
 
-#print-page {
-	display: none;
-}
-
-#plugin-print-sandbox #plugin-print-preview-map {
-	width: calc(80% - 14px) !important;
-	height: calc(80% - 106px) !important;
-}
-
-
-#future-habitat-custom-print-form {
-	display: block;
-    font-weight: bold;
-    font-size: 17px;
-    margin-top: 8px;
-	padding: 10px;
-}
-
-#future-habitat-custom-print-form .lbl-text {
+#plugin-print-modal .lbl-text {
 	display: block;
 }
 
-#future-habitat-custom-print-form input[type="text"] {
+#plugin-print-modal input[type="text"] {
 	width: 100%;
 	margin-bottom: 7px;
 }
 
-#future-habitat-custom-print-form .form-component {
+#plugin-print-modal .form-component {
 	margin-top: 10px;
 }
 
 
 /* End Custom print dialog */
 
-.future-habitat {
+.marine-risk {
 	display: flex;
 	flex-direction: row;
 	flex: 1;
@@ -80,9 +62,9 @@
 .additional-layers,
 .export
  {
- 	display: flex;
- 	flex-direction: column;
-	padding: 5px 17px;
+	display: flex;
+	flex-direction: column;
+	padding: 5px 16px;
 	width: 100%;
 }
 
@@ -94,7 +76,7 @@
 
 .select-controls .left-side,
 .select-controls .right-side {
-	width: 50%;
+	width: 75%;
 }
 
 .select-controls .left-side {
@@ -111,7 +93,7 @@
 	font-size: 13px;
 	line-height: 30px;
 	font-family: 'Archivo Narrow', 'Arial Narrow', Arial, Helvetica, sans-serif;
-    font-weight: bold;
+	font-weight: bold;
 }
 
 .select-controls .right-side .hint {
@@ -127,6 +109,12 @@
 	margin-top: 1.2rem;
 	text-align: center;
 	font-size: 13px;
+}
+
+.main-controls .ui-slider-pips .ui-slider-pip-label .ui-slider-label {
+	width: auto;
+	margin-left: -23px;
+	white-space: pre;
 }
 
 .main-controls .salt-marsh-control .slider-container {
@@ -154,11 +142,11 @@
 
 .transparency-label {
 	position: relative;
-    font-size: 11px;
-    width: 0;
-    padding: 0;
-    cursor: pointer;
-    user-select: none;
+	font-size: 11px;
+	width: 0;
+	padding: 0;
+	cursor: pointer;
+	user-select: none;
 }
 
 .transparency-label::after {
@@ -178,13 +166,13 @@
 .transparency-slider {
 	position: absolute;
 	display: none;
-    width: 85px;
-    height: 19px;
-    right: 3px;
-    background-color: #aaa;
-    padding: 0 10px;
-    border-radius: 3px;
-    border-top-right-radius: 0;
+	width: 85px;
+	height: 19px;
+	right: 3px;
+	background-color: #aaa;
+	padding: 0 10px;
+	border-radius: 3px;
+	border-top-right-radius: 0;
 }
 
 .transparency-control.open .transparency-slider {
@@ -211,6 +199,10 @@
 	background-color: #767676;
 }
 
+.ui-slider-label {
+	white-space: nowrap;
+}
+
 .main-controls .salt-marsh-control .transparency-control {
 	right: 30px;
 }
@@ -219,68 +211,155 @@
 	background-color: #f5f5f5;
 	flex-wrap: wrap;
 	flex-direction: row;
-	padding-right: 9px;
+	/*padding-right: 9px;*/
 }
 
-.future-habitat .stats .stat {
-	position: relative;
+.marine-risk .stats .stat {
+	/*position: relative;
 	margin: 5px 0;
-	height: 60px;
-	/*cursor: pointer;*/
+	height: auto;
+	cursor: pointer;
 	white-space: nowrap;
 	width: 100%;
-		margin-right: 8px;
+	margin-right: 8px;*/
 }
-
-.future-habitat .stats .stat:first-child .description {
-	padding-top: 18px;
+.stat.active.current-salt-marsh.twins {
+	position: relative;
+	height: auto;
+	white-space: nowrap;
+	width: calc(50% + 16px);
 }
-
-.future-habitat .stats .stat .pill {
-	background-color: #36a7d8;
-    color: #fff;
-    border-radius: 30px;
-    height: 60px;
-    width: 365px;
+.stat.active.current-salt-marsh.twins:nth-of-type(1) {
+	margin: -5px 0 10px -16px;
 }
-
-.future-habitat .stats .stat-info {
-    width: 20px;
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    right: -5px;
+.stat.active.current-salt-marsh.twins:nth-of-type(2) {
+	margin: -5px -16px 10px 0;
 }
-
-.future-habitat .stats .stat-info .fa-info-circle {
+.marine-risk .stats .stat .twinPanel {
+	display: inline-block;
+	background-color: white;
+	width: 100%;
+	height: auto;
+	color: #444;
+	border-radius: 0;
+	text-align: center;
+	margin: 0;
+}
+.marine-risk .stats .stat .twinPanel .description {
+	display: block;
+	font-size: 10px;
+	text-transform: uppercase;
+	line-height: 130%;
+	margin: 6px 0 13px 0;
+	padding: 0 17px;
+	height: 40px;
+	white-space: normal;
+}
+.marine-risk .stats .stat .twinPanel .number {
+	display: block;
+	border-bottom: 1px solid #ccc;
+	width: calc(100% - 26px);
+	margin: 0 13px;
+}
+.marine-risk .stats .stat .twinPanel .number .value {
+	display: block;
+	font-size: 35px;
+	line-height: 120%;
+}
+.marine-risk .stats .stat .twinPanel .stat-info {
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	top: 34px;
+	right: 12px;
+}
+.marine-risk .stats .stat .twinPanel .stat-info .fa {
 	color: #266f9c;
-    position: absolute;
-    top: 23px;
-    left: 4px;
-    font-size: 16px;
+	position: relative;
+	top: 0;
+	left: 0;
+	font-size: 16px;
+}
+.stat.active.current-salt-marsh {
+	position: relative;
+	background-color: white;
+	height: auto;
+	white-space: nowrap;
+	width: calc(100% + 12px);
+	margin: 0 -7px 5px -7px;
+}
+.stat.active.current-salt-marsh #slider {
+	margin: 26px;
 }
 
-/*.stats .stat.active .stat-info {
-	background-color: #03a0da;
-}*/
 
-.future-habitat .stats .number {
-    position: absolute;
-    left: 13px;
-	line-height: 60px;
+.marine-risk .stats .stat .statGrid {
+	width: 100%;
+	overflow:visible;
+}
+.marine-risk .stats .stat .statGrid.hidden {
+	display:none;
+	overflow:hidden;
+}
+.marine-risk .stats .stat .statGrid .statGridColumn {
+	display:inline-block;
+}
+.marine-risk .stats .stat .statGrid .statGridColumn ul {
+	padding:0px;
+}
+.marine-risk .stats .stat .statGrid .statGridColumnLeft li {
+	list-style-type: none;
+	line-height: normal;
+	padding: 5px;
+	border-left: 1px solid black;
+	border-top: 1px solid black;
+}
+.marine-risk .stats .stat .statGrid .statGridColumnRight li {
+	list-style-type: none;
+	line-height: normal;
+	padding: 5px;
+	border-left: 1px solid black;
+	border-top: 1px solid black;
+	border-right: 1px solid black;
+}
+
+/*.marine-risk .stats .stat-info {
+	width: 20px;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: -5px;
+}
+
+
+.marine-risk .stats .stat-info .fa-info-circle {
+	color: #266f9c;
+	position: absolute;
+	top: 23px;
+	left: 4px;
+	font-size: 16px;
+}
+
+.stats .stat.active .stat-info {
+	background-color: #03a0da;
+}
+
+.marine-risk .stats .number {
+	flex: 0 0 170px;
+	margin-left: 10px;
 	font-size: 17px;
 }
 
-.future-habitat .stats .number .value {
+.marine-risk .stats .number .value {
 	font-size: 21px;
 	letter-spacing: -0.5px;
 	font-weight: bold;
 	vertical-align: middle;
 }
+*/
 
 
-
-.future-habitat .stats .icon {
+.marine-risk .stats .icon {
 	display: inline-block;
 	width: 35px;
 	height: 35px;
@@ -289,40 +368,62 @@
 	
 }
 
-.future-habitat .stats .icon img {
+.marine-risk .stats .icon img {
 	width: 30px;
 	height: 30px;
 }
 
-.future-habitat .stats .icon.grass {
-    background: url("icons/grass.png") center no-repeat white;
-    background-size: 30px 30px;
+.marine-risk .stats .icon.grass {
+	background: url("icons/grass.png") center no-repeat white;
+	background-size: 30px 30px;
 }
 
-.future-habitat .stats .icon.bird {
-    background: url("icons/bird.png") center no-repeat white;
-    background-size: 30px 30px;
+.marine-risk .stats .icon.bird {
+	background: url("icons/bird.png") center no-repeat white;
+	background-size: 30px 30px;
 }
 
-.future-habitat .stats .icon.fish {
-    background: url("icons/fish.png") center no-repeat white;
-    background-size: 30px 30px;
+.marine-risk .stats .icon.fish {
+	background: url("icons/fish.png") center no-repeat white;
+	background-size: 30px 30px;
 }
 
-.future-habitat .stats .description {
-    line-height: 24px;
-    font-size: 18px;
-    position: absolute;
-    left: 203px;
-	width: 151px;
-    display: block;
-    padding-top: 6px;
+.marine-risk .stats .icon.marsh {
+	background: url("icons/marsh.png") center no-repeat white;
+	background-size: 30px 30px;
+}
+
+.marine-risk .stats .icon.beach {
+	background: url("icons/beach.png") center no-repeat white;
+	background-size: 30px 30px;
+}
+
+.marine-risk .stats .icon.swamp {
+	background: url("icons/swamp.png") center no-repeat white;
+	background-size: 30px 30px;
+}
+
+.marine-risk .stats .icon.water {
+	background: url("icons/water.png") center no-repeat white;
+	background-size: 30px 30px;
+}
+
+.marine-risk .stats .icon.flats {
+	background: url("icons/flats.png") center no-repeat white;
+	background-size: 30px 30px;
+}
+
+/*.marine-risk .stats .description {
+	font-size: 18px;
+	flex-wrap: nowrap;
+	white-space: normal;
+	margin-right: 22px;
 }
 
 .additional-layers .description {
 	margin: 8px 0px;
 }
-
+*/
 .additional-layers .layer {
 	position: relative;
 	height: 35px;
@@ -337,8 +438,8 @@
 
 .additional-layers .info {
 	position: absolute;
-    right: 0;
-    top: 4px;
+	right: 0;
+	top: 4px;
 	color: #266f9c;
 	font-size: 16px;
 }
@@ -351,3 +452,27 @@
 	left: 18px;
 	position: absolute;
 }
+
+.custom-combobox {
+	position: relative;
+	display: inline-block;
+}
+ .custom-combobox-toggle {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	margin-left: -1px;
+	padding: 0;
+}
+ .custom-combobox-input {
+	margin: 0;
+	padding: 5px 10px;
+}
+#custom-handle {
+	width: 3em;
+	height: 1.6em;
+	top: 50%;
+	margin-top: -.8em;
+	text-align: center;
+	line-height: 1.6em;
+} 

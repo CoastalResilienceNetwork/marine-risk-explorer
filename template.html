@@ -2,56 +2,53 @@
 <script type="text/javascript" src="plugins/marine-risk-explorer/html2canvas.min.js" />
 <link href="plugins/marine-risk-explorer/style.css" rel="stylesheet">
 
-<div class="future-habitat">
+<div class="marine-risk">
 
 	<div class="intro">
-		Intro Text...
+		Intro text.
 	</div>
 
 	<div class="select-controls">
 		<div class="left-side">
-			Choose region to explore:
-			<div class="chosen-wrap">
-				<select id="chosenRegion" class="chosen">
+			<%= townLabel %>:
+			<div class="ui-widget">
+				<select id="combobox">
 					<option></option>
-					<option selected>Maine</option>
-					<option>Blue Hill Bay</option>
-					<option>Casco Bay</option>
-					<option>Cobscook - Passamaquoddy Bay</option>
-					<option>Downeast - Bold Coast</option>
-					<option>Englishman Bay - Machias Bay</option>
-					<option>Frenchman Bay</option>
-					<option>Kennebec/Androscoggin River</option>
-					<option>Muscongus Bay</option>
-					<option>Narraguagus Bay</option>
-					<option>Penobscot Bay</option>
-					<option>Saco Bay</option>
-					<option>Sheepscot Bay - Damariscotta River</option>
-					<option>South Coast</option>
-					<option>Wells Bay - Kennebunk River</option>
+					<% _.each(towns, function(val, key) { if (val !== "global") {%>
+						<option value="<%= val %>"><%= val %></option>
+					<% }}); %>
 				</select>
 			</div>
 		</div>
 
 		<div class="right-side">
-			<div class="hint" style="display: none;">** Please zoom in to view parcel-level information</div>
-			<div class="parcel-label" style="display: none;">Parcel: <br>
-			<span id="parcel-id"></span></div>
+			<% if (disclaimer) { %>
+				<span style="font-size: 11px; line-height: 13px; display: block;"><%= disclaimer %></span>
+			<% } else { %>
+				<div class="hint" style="display: none;">** Please zoom in to view parcel-level information</div>
+				<div class="parcel-label" style="display: none;">Parcel: <br><span id="parcel-id"></span></div>
+				<span id="blockGroupName"></span>
+			<% } %>
 		</div>
 
 	</div>
 
 	<div class="main-controls">
 
-		<h3>Social Vulnerability for <br><span class="region-label">Maine</span></h3>
+		<h3><% if (intro) { %>
+			<%= intro %>
+		<% } else { %>
+			Conservation measures for
+		<% } %>
+		<span id="town_name_label"></span></h3>
 
-		<div class="salt-marsh-control" data-scenario-idx="0" data-scenario-current="22371.7008" data-scenario-ft1="26799.73447" data-scenario-ft2="31742.08167" data-scenario-ft33="36201.71331" data-scenario-ft6="44494.32286" data-scenario-barriers="2198" data-scenario-wetlands="406231.696">
+		<div class="salt-marsh-control" data-scenario-idx="0">
 			<strong>Sea Level Rise Prediction</strong>
 			<div class="slider-container">
 				<div id="salt-marsh-slider" class="slider"></div>
 			</div>
 
-			<div class="transparency-control" data-layer="marshHabitat" data-opacity="100">
+			<div class="transparency-control" data-layer="seaLevelRise" data-opacity="100">
 				<span class="transparency-header">Transparency</span>
 				<div class="transparency-label"><span class="value">100%</span></div>
 				<div class="transparency-slider" style="margin-top: -20px; margin-right: -16px;">
@@ -60,63 +57,83 @@
 			</div>
 		</div>
 	</div>
-
+	
 	<div class="stats">
+		<% _.each(reportItems, function(stat) { %>
+			<% if (stat.type === "multiple") { %>
+				<div class="stat active current-salt-marsh" data-stat="<%= stat.label.toLowerCase().replace(/ /g, '-').replace(/\//g, '-') %>">
+					<div id="sv_slider">
+						<div id="custom-handle" class="ui-slider-handle"></div>
+					</div>
+					<div class="panel">
+						<div class="number">
+							<!-- <div class="icon <%= stat.icon %>"></div> -->
+							<span class="value"></span> <span class="units"><%= stat.units %></span>
+						</div>
+						<div class="description"><%= stat.label %></div>
+						<div class="description"><span class="carrotToggle" style="font-size:26px">^</span></div>
+					</div>
+					<% if (stat.tooltip) { %>
+					<div class="stat-info">
+						<span class="fa fa-info-circle info" title="<%= stat.tooltip %>"></span>
+					</div>
+					<% } %>
 
-		<div class="stat active current-salt-marsh">
-			<div class="pill">
-				<div class="number">
-					<div class="icon grass"></div>
-					<span class="value">22,371</span> <span class="units">acres</span>
+					<div class="statGrid">
+						<div class="statGridColumn statGridColumnLeft" style="float:left">
+							<ul
+							<% _.each(stat.categories, function(cat) { %>
+								<% if (cat.position === "left") { %>
+									<li style="font-weight:bold"><!-- <span class="icon <%= cat.icon %>"></span> --> <%= cat.label %></li>	
+									<% _.each(cat.metrics, function(met) { %>
+										<li style="border:1 1 1 0"><%= met.label %><span> (<span id="metric_<%= met.field %>">57</span><%= met.units %>)</span></li>
+									<% }); %>		
+								<% } %>
+							<% }); %>
+							</ul>
+						</div>
+						<div class="statGridColumn statGridColumnRight">
+							<ul>
+							<% _.each(stat.categories, function(cat) { %>
+								<% if (cat.position === "right") { %>
+									<li style="font-weight:bold"><span class="icon <%= cat.icon %>"></span> <%= cat.label %></li>	
+									<% _.each(cat.metrics, function(met) { %>
+										<li style="border:1 1 1 0"><%= met.label %><span> (<span id="metric_<%= met.field %>">57</span><%= met.units %>)</span></li>
+									<% }); %>		
+								<% } %>
+							<% }); %>
+							</ul>
+						</div>
+					</div>
+
 				</div>
-				<div class="description">Tidal Marsh Area</div>
-			</div>
-			<div class="stat-info">
-				<span class="fa fa-info-circle info" title="Displays the current and predicted size of tidal marshes visible on the map or selected in response to projected sea-level rise scenarios."></span>
-			</div>
-		</div>
-
-		<div class="stat inland-wetlands">
-			<div class="pill">
-				<div class="number">
-					<div class="icon bird"></div>
-					<span class="value">406,231</span> <span class="units">acres</span>
+			<% } else if (stat.type === "single") { %>
+				<div class="stat active current-salt-marsh twins" data-stat="<%= stat.label.toLowerCase().replace(/ /g, '-').replace(/\//g, '-') %>">
+					<div class="twinPanel">
+						<div class="number">
+							<span id="metric_<%= stat.elId %>" class="value">123</span>
+						</div>
+						<div class="description"><%= stat.label %></div>
+						<% if (stat.tooltip) { %>
+						<div class="stat-info">
+							<span class="fa fa-info-circle info" title="<%= stat.tooltip %>"></span>
+						</div>
+						<% } %>
+					</div>
 				</div>
-				<div class="description">Non-Tidal<br>Wetlands Area</div>
-			</div>
-			<div class="stat-info">
-				<span class="fa fa-info-circle info" title="Displays current fresh water wetland areas. Indicates CURRENT CONDITIONS ONLY AND DOES NOT PREDICT potential FUTURE CONDITIONS WITH SEA LEVEL CHANGE. (Check the Non-Tidal Wetlands box below to view this information.)"></span>
-			</div>
-		</div>
-
-		<div class="stat roadcrossing-potential">
-			<div class="pill">
-				<div class="number">
-					<div class="icon fish"></div>
-					<span class="value">2,198</span>
-				</div>
-				<div class="description">Road Crossing<br>Barriers Nearby</div>
-			</div>
-			<div class="stat-info">
-				<span class="fa fa-info-circle info" title="Displays surveyed road crossings that have been identified as potential stream barriers within 300 feet of selected parcels. (Check the Road-Stream Crossing Barriers box below to view this information.)"></span>
-			</div>
-		</div>
-
+			<% } %>
+		<% }); %>
 	</div>
+	
 
 	<div class="additional-layers">
-
 		<strong>Additional Layers:</strong>
 		<div class="description">Learn more about your area of interest by selecting from these additional information layers.</div>
 
-		
-
-		
-
-		
+		<% if (road_stream_crossing) { %>
 		<div class="layer">
 			<label class="form-component">
-				<input type="checkbox" data-layer="road_stream_crossing">
+				<input type="checkbox" data-layer="roadStreamCrossing">
 				<div class="check"></div>
 				<span class="form-text">Road-Stream Crossing Barriers</span> 
 			</label>
@@ -129,57 +146,9 @@
 				</div>
 			</div>
 		</div>
+		<% } %>
 
-		<div class="layer">
-			<label class="form-component">
-				<input type="checkbox" data-layer="non_tidal_wetlands">
-				<div class="check"></div>
-				<span class="form-text">Non-Tidal Wetlands</span> 
-			</label>
-			<span class="fa fa-info-circle info" title="Displays current fresh water wetland areas. Indicates CURRENT CONDITIONS ONLY AND DOES NOT PREDICT potential FUTURE CONDITIONS WITH SEA LEVEL CHANGE. (Check the Non-Tidal Wetlands box below to view this information.)"></span>
-			<div class="transparency-control" data-layer="non_tidal_wetlands" data-opacity="100">
-				<span class="transparency-header">Transparency</span>
-				<div class="transparency-label"><span class="value">100%</span></div>
-				<div class="transparency-slider">
-					<div class="slider"></div>
-				</div>
-			</div>
-		</div>
-
-
-		<div class="layer">
-			<label class="form-component">
-				<input type="checkbox" data-layer="wildlife_habitat">
-				<div class="check"></div>
-				<span class="form-text">Wildlife and Habitat Concentrations</span> 
-			</label>
-			<span class="fa fa-info-circle info" title="Developed by the Maine Department of Inland Fisheries and Wildlife, this layer represents the relative concentration of select wildlife and habitat values on the landscape. Its purpose is to highlight the area’s conservation values as an aid in planning."></span>
-			<div class="transparency-control" data-layer="wildlife_habitat" data-opacity="100">
-				<span class="transparency-header">Transparency</span>
-				<div class="transparency-label"><span class="value">100%</span></div>
-				<div class="transparency-slider">
-					<div class="slider"></div>
-				</div>
-			</div>
-		</div>
-
-		<div class="layer">
-			<label class="form-component">
-				<input type="checkbox" data-layer="current_conservation_lands">
-				<div class="check"></div>
-				<span class="form-text">Current Conservation Lands</span>
-			</label>
-			 <span class="fa fa-info-circle info" title="Displays public and private lands that are currently protected by conservation ownership or easement."></span>
-
-			<div class="transparency-control" data-layer="current_conservation_lands" data-opacity="100">
-				<span class="transparency-header">Transparency</span>
-				<div class="transparency-label"><span class="value">100%</span></div>
-				<div class="transparency-slider">
-					<div class="slider"></div>
-				</div>
-			</div>
-		</div>
-
+		<% if (lidar) { %>
 		<div class="layer">
 			<label class="form-component">
 				<input type="checkbox" data-layer="lidar">
@@ -196,6 +165,7 @@
 				</div>
 			</div>
 		</div>
+		<% } %>
 
 	</div>
 
