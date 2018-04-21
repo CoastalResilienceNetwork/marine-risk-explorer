@@ -245,10 +245,11 @@
 	text-align: center;
 	margin: 0;
 }
-.marine-risk .stats .stat .twinPanel .description {
+.marine-risk .stats .stat .description, .marine-risk .stats .stat .twinPanel .description {
 	display: block;
 	font-size: 10px;
 	text-transform: uppercase;
+	text-align: center;
 	line-height: 130%;
 	margin: 6px 0 13px 0;
 	padding: 0 17px;
@@ -260,17 +261,43 @@
 	border-bottom: 1px solid #ccc;
 	width: calc(100% - 26px);
 	margin: 0 13px;
+	line-height: 50px;
 }
-.marine-risk .stats .stat .twinPanel .number .value {
-	display: block;
-	font-size: 35px;
+.marine-risk .stats .stat .twinPanel .number .value, .marine-risk .stats .stat .twinPanel .number .value .symbol {
+	display: inline-block;
+	font-size: 27px;
 	line-height: 120%;
 }
+.marine-risk .stats .stat .twinPanel .town {
+	height: 0px;
+	overflow: hidden;
+	transition: .3s height ease;
+}
+.marine-risk .stats .stat .twinPanel .town.active {
+	height: 60px;
+	overflow: hidden;
+}
+.marine-risk .stats .stat .twinPanel .town .number {
+	display: block;
+	border-bottom: 1px solid #ccc;
+	width: calc(100% - 26px);
+	margin: 0 13px;
+	line-height: 25px;
+}
+.marine-risk .stats .stat .twinPanel .town .number .value, .marine-risk .stats .stat .twinPanel .town .number.value .symbol {
+	display: inline-block;
+	font-size: 21px;
+	line-height: 140%;
+}
+.marine-risk .stats .stat .twinPanel .town .description {
+	height: 16px;
+}
+
 .marine-risk .stats .stat .twinPanel .stat-info {
 	position: absolute;
 	width: 16px;
 	height: 16px;
-	top: 34px;
+	top: 41px;
 	right: 12px;
 }
 .marine-risk .stats .stat .twinPanel .stat-info .fa {
@@ -288,39 +315,127 @@
 	width: calc(100% + 12px);
 	margin: 0 -7px 5px -7px;
 }
-.stat.active.current-salt-marsh #slider {
-	margin: 26px;
+.stat.active.current-salt-marsh .chart-holder h3 {
+	font-size: 13px;
+	text-align: center;
+}
+.stat.active.current-salt-marsh .chart-holder .label-left, .stat.active.current-salt-marsh .chart-holder .label-right {
+	font-size: 11px;
+	text-align: left;
+	color: #999;
+	margin-left: 26px;
+}
+.stat.active.current-salt-marsh .chart-holder .label-right {
+	float: right;
+	margin-right: 26px;
+}
+
+.stat.active.current-salt-marsh #sv_slider {
+	margin: 2px 26px 36px 26px;
+}
+#sv_slider {
+	height: 26px;
+}
+#sv_slider .ui-widget-header {
+	background-image: none;
+	background-color: #0c9bd9;
+}
+#custom-handle {
+	width: 3px;
+	height: 40px;
+	top: -7px;
+	margin-top: 0;
+	margin-left: -3px;
+	line-height: 98px;
+	font-size: 21px;
+	font-weight: bold;
+	text-indent: -4%;
+	background-image: none;
+	background-color: #0c9bda;
+	border-color: #0c9bda;
+	letter-spacing: -2px;
+	outline: none;
+}
+.stat.active.current-salt-marsh .description {
+	height: auto;
+	margin: 8px 0 4px 0;
+}
+.stat.active.current-salt-marsh .stat-info {
+	position: absolute;
+	right: 9px;
+	top: 130px;
+	width: 16px;
+	height: 16px;
+}
+.stat.active.current-salt-marsh .show-hide {
+	margin: 10px 0 13px 0;
+	text-align: center;
+}
+.stat.active.current-salt-marsh .show-hide .carrotToggle {
+	display: inline-block;
+	font-size: 12px;
+	cursor: pointer;
+	border: 1px solid #92dbfb;
+	padding: 5px 10px;
+	border-radius: 20px;
+	transition: .3s all ease;
+}
+.stat.active.current-salt-marsh .show-hide .carrotToggle:hover {
+	background-color: #3875d7;
+	color: white;
+}
+.stat.active.current-salt-marsh .show-hide .carrotToggle.disabled {
+	background-color: transparent;
+	color: #444;
+	opacity: .4;
+}
+.stat.active.current-salt-marsh .show-hide .carrotToggle.disabled:hover {
+	background-color: transparent;
+	color: #444;
+	opacity: .4;
 }
 
 
 .marine-risk .stats .stat .statGrid {
 	width: 100%;
-	overflow:visible;
+	overflow: hidden;
+	white-space: normal;
+	font-size: 12px;
+	max-height: 0px;
+	transition: .3s all ease;
 }
-.marine-risk .stats .stat .statGrid.hidden {
-	display:none;
-	overflow:hidden;
+.marine-risk .stats .stat .statGrid .icon {
+	display: none;
+}
+.marine-risk .stats .stat .statGrid.active {
+	max-height: 500px;
 }
 .marine-risk .stats .stat .statGrid .statGridColumn {
-	display:inline-block;
+	display: inline-block;
+	width: 48%;
+	margin: -0 3px;
+	position: relative;
+	vertical-align: top;
 }
 .marine-risk .stats .stat .statGrid .statGridColumn ul {
-	padding:0px;
+	padding: 0px;
 }
-.marine-risk .stats .stat .statGrid .statGridColumnLeft li {
+.marine-risk .stats .stat .statGrid li {
 	list-style-type: none;
 	line-height: normal;
 	padding: 5px;
-	border-left: 1px solid black;
-	border-top: 1px solid black;
+	border: 1px solid #c7c7c7;
+	margin-top: -1px;
 }
-.marine-risk .stats .stat .statGrid .statGridColumnRight li {
-	list-style-type: none;
-	line-height: normal;
-	padding: 5px;
-	border-left: 1px solid black;
-	border-top: 1px solid black;
-	border-right: 1px solid black;
+.marine-risk .stats .stat .statGrid li.hilite {
+	background-color: #e4f1ff;
+}
+.marine-risk .stats .stat .statGrid li.cat-label {
+	font-weight: bold;
+	background-color: #444;
+	border: 1px solid #444;
+	color: white;
+	padding: 10px 5px;
 }
 
 /*.marine-risk .stats .stat-info {
@@ -464,15 +579,46 @@
 	margin-left: -1px;
 	padding: 0;
 }
- .custom-combobox-input {
+ .custom-combobox .custom-combobox-input {
 	margin: 0;
 	padding: 5px 10px;
+	width: 145px;
+	background-image: none;
+	background-color: white;
 }
-#custom-handle {
-	width: 3em;
-	height: 1.6em;
-	top: 50%;
-	margin-top: -.8em;
-	text-align: center;
-	line-height: 1.6em;
-} 
+.ui-menu.ui-widget.ui-widget-content.ui-autocomplete.ui-front {
+	max-height: 350px;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+/*.ui-menu.ui-widget.ui-widget-content.ui-autocomplete.ui-front .ui-menu-item {
+	border-width: 0px;
+	padding: 0;
+	list-style-image: none;
+	margin: 0;
+}
+.ui-menu.ui-widget.ui-widget-content.ui-autocomplete.ui-front .ui-menu-item:hover {
+	background-color: ;
+	padding: 0;
+	border-width: 0px;
+	list-style-image: none;
+	color: white;
+}
+*/.ui-menu.ui-widget.ui-widget-content.ui-autocomplete.ui-front .ui-menu-item .ui-menu-item-wrapper {
+	border-width: 0px;
+	padding: 3px 5px;
+	margin: 0;
+	background-color: white;
+	background-image: none;
+	transition: .3s all ease;
+}
+.ui-menu.ui-widget.ui-widget-content.ui-autocomplete.ui-front .ui-menu-item .ui-menu-item-wrapper:hover {
+	border-width: 0px;
+	padding: 3px 5px;
+	margin: 0;
+	color: white;
+	background-color: #3875d7;
+	background-image: linear-gradient(#3875d7 20%, #2a62bc 90%);
+}
+
+

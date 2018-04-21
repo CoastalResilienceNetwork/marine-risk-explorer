@@ -62,16 +62,21 @@
 		<% _.each(reportItems, function(stat) { %>
 			<% if (stat.type === "multiple") { %>
 				<div class="stat active current-salt-marsh" data-stat="<%= stat.label.toLowerCase().replace(/ /g, '-').replace(/\//g, '-') %>">
-					<div id="sv_slider">
-						<div id="custom-handle" class="ui-slider-handle"></div>
+					<div class="chart-holder">
+						<h3><span id="sv_title">Social Vulnerability Ranking</span></h3>
+						<span class="label-left">Least Vulnerable</span>
+						<span class="label-right">Most Vulnerable</span>
+						<div id="sv_slider">
+							<div id="custom-handle" class="ui-slider-handle"></div>
+						</div>
 					</div>
 					<div class="panel">
-						<div class="number">
-							<!-- <div class="icon <%= stat.icon %>"></div> -->
+						<!-- <div class="number">
+							<div class="icon <%= stat.icon %>"></div>
 							<span class="value"></span> <span class="units"><%= stat.units %></span>
-						</div>
+						</div> -->
 						<div class="description"><%= stat.label %></div>
-						<div class="description"><span class="carrotToggle" style="font-size:26px">^</span></div>
+						<div class="show-hide"><span class="carrotToggle">Show/Hide Details<img src="" /></span></div>
 					</div>
 					<% if (stat.tooltip) { %>
 					<div class="stat-info">
@@ -80,13 +85,13 @@
 					<% } %>
 
 					<div class="statGrid">
-						<div class="statGridColumn statGridColumnLeft" style="float:left">
-							<ul
+						<div class="statGridColumn statGridColumnLeft">
+							<ul>
 							<% _.each(stat.categories, function(cat) { %>
 								<% if (cat.position === "left") { %>
-									<li style="font-weight:bold"><!-- <span class="icon <%= cat.icon %>"></span> --> <%= cat.label %></li>	
+									<li class="cat-label"><%= cat.label %></li>	
 									<% _.each(cat.metrics, function(met) { %>
-										<li style="border:1 1 1 0"><%= met.label %><span> (<span id="metric_<%= met.field %>">57</span><%= met.units %>)</span></li>
+										<li><%= met.label %><span> (<span id="metric_<%= met.field %>">--</span><%= met.units %>)</span></li>
 									<% }); %>		
 								<% } %>
 							<% }); %>
@@ -96,9 +101,9 @@
 							<ul>
 							<% _.each(stat.categories, function(cat) { %>
 								<% if (cat.position === "right") { %>
-									<li style="font-weight:bold"><span class="icon <%= cat.icon %>"></span> <%= cat.label %></li>	
+									<li class="cat-label"><span class="icon <%= cat.icon %>"></span> <%= cat.label %></li>	
 									<% _.each(cat.metrics, function(met) { %>
-										<li style="border:1 1 1 0"><%= met.label %><span> (<span id="metric_<%= met.field %>">57</span><%= met.units %>)</span></li>
+										<li><%= met.label %><span> (<span id="metric_<%= met.field %>">--</span><%= met.units %>)</span></li>
 									<% }); %>		
 								<% } %>
 							<% }); %>
@@ -111,14 +116,28 @@
 				<div class="stat active current-salt-marsh twins" data-stat="<%= stat.label.toLowerCase().replace(/ /g, '-').replace(/\//g, '-') %>">
 					<div class="twinPanel">
 						<div class="number">
-							<span id="metric_<%= stat.elId %>" class="value">123</span>
-						</div>
+							<% if (stat.unitsBeforeValue === true) { %>	
+								<span class="value symbol"><%= stat.units %></span><span id="metric_<%= stat.elId %>" class="value">--</span>
+							<% } else { %>
+								<span id="metric_<%= stat.elId %>" class="value">--</span><span class="value"><%= stat.units %></span>
+							<% } %>
+						</div> 
 						<div class="description"><%= stat.label %></div>
 						<% if (stat.tooltip) { %>
 						<div class="stat-info">
 							<span class="fa fa-info-circle info" title="<%= stat.tooltip %>"></span>
 						</div>
 						<% } %>
+						<div class="town">
+							<div class="number">
+								<% if (stat.unitsBeforeValue === true) { %>	
+									<span class="value symbol"><%= stat.units %></span><span id="metric_<%= stat.elId %>_twn" class="value">--</span>
+								<% } else { %>
+									<span id="metric_<%= stat.elId %>_twn" class="value">--</span><span class="value"><%= stat.units %></span>
+								<% } %>
+							</div> 
+							<div class="description">Town Total</div>
+						</div>
 					</div>
 				</div>
 			<% } %>

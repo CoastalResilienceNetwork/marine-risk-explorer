@@ -1,6 +1,7 @@
 define([
 	"dojo/_base/declare",
 	"dojo/_base/lang",
+	"dojo/promise/all",
 	"framework/PluginBase",
 	"esri/layers/VectorTileLayer",
 	"esri/layers/ArcGISTiledMapServiceLayer",
@@ -27,6 +28,7 @@ define([
     "dojo/text!./template.html",
 	], function(declare,
 		lang,
+		all,
 		PluginBase,
 		VectorTileLayer,
 		ArcGISTiledMapServiceLayer,
@@ -52,9 +54,6 @@ define([
 		print_stat_template,
 		template
 	) {
-
-		// TODO: Clear currently selected parcel button
-
 		return declare(PluginBase, {
 			toolbarName: 'Coastal Risk', //content pane title
 			fullName: 'Coastal Risk Explorer', //toolbar hover text
@@ -72,6 +71,10 @@ define([
 			activated: false,
 			currentTown: {"name": '', "data":{}},
 			currentBlockGroup: {"name": '', "data":{}},
+			qtTown: null,
+			qTown: null,
+			qtBlockGroup: null,
+			qBlockGroup: null,
 			/** 
 			 * Method: initialize
 			 * 		The framework calls this during initial framework load from the file app\js\Plugin.js (approx line 70).
@@ -123,10 +126,18 @@ define([
 				// 	this.qCrossings.returnGeometry = true;
 				// }
 
+				//Init Query Tasks for map click
+				this.qtTown = new QueryTask(this.regionConfig.service + '/' + this.regionConfig.townsLayer_ServiceIndex);
+				this.qTown = new Query();
+				this.qTown.outFields = ['*'];
+				this.qTown.returnGeometry = true;
 
+				this.qtBlockGroup = new QueryTask(this.regionConfig.service + '/' + this.regionConfig.blockGroupLayer_ServiceIndex);
+				this.qBlockGroup = new Query();
+				this.qBlockGroup.outFields = ['*'];
+				this.qBlockGroup.returnGeometry = true;
 
-				// // Setup graphic styles
-				
+				// Graphic Symbols
 				this.townSymbol = new SimpleFillSymbol(
 					SimpleFillSymbol.STYLE_SOLID,
 					new SimpleLineSymbol(
@@ -190,6 +201,7 @@ define([
 				console.debug('Marine Risk Explorer; main.js; activate()');
 				//TODO eliminate need for self = this;
 				var self = this;
+
 				this.layers = {};
 				// Only set the extent the first time the app is activated
 				if(!this.activated){
@@ -330,7 +342,7 @@ define([
 								q.outFields = ['*'];
 								q.returnGeometry = true;
 								qt.execute(q, lang.hitch(self,function(featSet){
-									console.debug('query task success:', featSet);
+									//console.debug('query task success:', featSet);
 									if(featSet.features.length >= 1){
 										self.setCurrentBlockGroup({});
 										self.clearSelectedBlockGroupGraphics();
@@ -469,7 +481,10 @@ define([
 						handle.text( $( this ).slider( "value" ) );
 					},
 					slide: function( event, ui ) {
-						handle.text( ui.value );
+						//console.debug('slide: event', event);
+						//console.debug('slide: ui', ui);
+						//handle.text( ui.value );
+						return false;
 					}
 				});
 
@@ -505,54 +520,52 @@ define([
 				// }));
 
 				this.marineRiskMapClickEvent = this.map.on('click', lang.hitch(this, function(evt) { 
-					console.debug("map click!");
-					var qt = new QueryTask(this.regionConfig.service + '/' + this.regionConfig.blockGroupLayer_ServiceIndex);
-					var q = new Query();
-					//q.where = this.regionConfig.blockGroupLayer_NameField + " = '" + townName + "'";
-					q.geometry = evt.mapPoint;
-					q.outFields = ['*'];
-					q.returnGeometry = true;
-					qt.execute(q, lang.hitch(this,function(featSet){
-						console.debug('BG query task success:', featSet);
-						if (featSet.features.length >= 1){
-							this.setCurrentBlockGroup(featSet.features[0]);
-							this.zoomToBlockGroup(featSet.features[0]);
-							this.updateMetrics('blockgroup',self.$el.find("#salt-marsh-slider").slider("value"));
-							this.updateBlockGroupName(featSet.features[0].attributes[this.regionConfig.blockGroupLayer_NameField]);
-						} else {
-							//TODO show data for the town then?
-							//TODO this can also occurr (other than clicking in no-mans-land) when clicking on a town with no block groups, 
-							//	like in 'Marion Twp' or 'Whiting' (the grey ones on the map)
-						}
-					}), lang.hitch(this,function(err){
-						console.error('BG query task error:',err);
-					}));
+					//console.debug("map click!");
+					this.qBlockGroup.geometry = evt.mapPoint;
+					var deferredBlockGroup = this.qtBlockGroup.execute(this.qBlockGroup);
+					//Town Check: is BG still in the currently selected town? If not, change town selection in map and in DDL, but do not fire on-change for the DDL.
+					//TODO - this action raises the question of how the user can cange the metrics view back to town after picking a BG? Currently the only way is to 
+					// 	select a new town, then go back to the current town.
+					this.qTown.geometry = evt.mapPoint;
+					var deferredTown = this.qtTown.execute(this.qTown);
+					//using dojo/promise/all to group these two asych queries and handle after all are complete.
+					all([deferredBlockGroup, deferredTown]).then(lang.hitch(this,function(featSets){
+						console.debug('all() deferred results: ', featSets);
+						try{
+							//Block Group
+							if (featSets[0].features.length >= 1){
+								this.setCurrentBlockGroup(featSets[0].features[0]);
+								this.zoomToBlockGroup(featSets[0].features[0]);
+								this.updateBlockGroupName(featSets[0].features[0].attributes[this.regionConfig.blockGroupLayer_NameField]);
+								
+								//Town Check
+								if (featSets[1].features.length >= 1){
+									if(featSets[1].features[0].attributes[this.regionConfig.townsLayer_NameField] != this.currentTown.name){
+										console.debug('town names do not match, change selected town');
+										this.clearSelectedTownGraphics();
+										this.drawSelectedTownGraphics(featSets[1].features[0]);
+										this.setCurrentTown(featSets[1].features[0]);
+										//Update the town ddl to the new town.
+										this.$el.find('.custom-combobox-input').val(featSets[1].features[0].attributes[this.regionConfig.townsLayer_NameField]);
+									}else {
+										console.debug('town names match');
+									}
+								} else {
+									console.debug('No Towns Found');
+									//TODO ? msg to user - no block group found
+								}
 
-					//Check: is BG still in the currently selected town? If not, change town selection in map and in DDL, but do not fire on-change for the DDL.
-					//TODO - this action raises the question of how the user can cange the metrics view back to town after picking a BG?
-					var qtTown = new QueryTask(this.regionConfig.service + '/' + this.regionConfig.townsLayer_ServiceIndex);
-					var qTown = new Query();
-					qTown.geometry = evt.mapPoint;
-					qTown.outFields = ['*'];
-					qTown.returnGeometry = true;
-					qtTown.execute(qTown, lang.hitch(this,function(featSet){
-						console.debug('Town query task success:', featSet);
-						if (featSet.features.length >= 1){
-							if(featSet.features[0].attributes[this.regionConfig.townsLayer_NameField] != this.currentTown.name){
-								console.debug('town names do not match, change selected town');
-								this.clearSelectedTownGraphics();
-								this.drawSelectedTownGraphics(featSet.features[0]);
-								this.setCurrentTown(featSet.features[0]);
-								//Update the town ddl to the new town.
-								this.$el.find('.custom-combobox-input').val(featSet.features[0].attributes[this.regionConfig.townsLayer_NameField]);
-							}else {
-								console.debug('town names match');
+								this.updateMetrics('blockgroup',self.$el.find("#salt-marsh-slider").slider("value"));
+							} else {
+								console.debug('No Block Groups Found');
+								//TODO show data for the town then?
+								//TODO this can also occurr (other than clicking in no-mans-land) when clicking on a town with no block groups, 
+								//	as in 'Marion Twp' or 'Whiting' (the grey ones on the map)
 							}
-						} else {
-							//TODO msg to user - no block group found
+							
+						}catch(err){
+							console.error('map click data processing error:',err);
 						}
-					}), lang.hitch(this,function(err){
-						console.error('Town query task error:',err);
 					}));
 				}));
 
@@ -572,7 +585,7 @@ define([
 				});
 
 				this.$el.find('.carrotToggle').on('click',function(a,b,c){
-					$('.stats .stat .statGrid').toggleClass('hidden');
+					$('.stats .stat .statGrid').toggleClass('active');
 				});
 
 				//Additional Layers checkboxes
@@ -616,8 +629,10 @@ define([
 					this.map.removeLayer(this.layers[layer]);
 				}, this);
 				this.layers = {};
-
-				// TODO: Cleanup map click events
+				//house cleaning
+				this.currentTown = {"name": '', "data":{}};
+				this.currentBlockGroup = {"name": '', "data":{}};
+				//remove map click event
 				this.marineRiskMapClickEvent.remove();
 				
 			},
@@ -892,6 +907,7 @@ define([
 				this.layers.coastalRisk.setVisibleLayers(lyrAry);
 				this.layers.coastalRisk.refresh();
 				//update data - if currentBlockGroup.data has an objedtid property, assume we are looking at a blockgroup, otherwise town
+				console.debug('currentBlockGroup.data.hasOwnProperty("OBJECTID")?: ', this.currentBlockGroup.data.hasOwnProperty("OBJECTID"));
 				if(this.currentBlockGroup.data.hasOwnProperty("OBJECTID")){
 					this.updateMetrics('blockgroup', idx);
 				}else{
@@ -908,121 +924,209 @@ define([
 			*/		
 			updateMetrics: function(categroy, seaLevelIndex){
 				console.debug('Marine Risk Explorer; main.js; updateMetrics() for ' + categroy);
-				var roadValue = null;
-				var addyValue = null;
+				var roadBGValue = null, addyBGValue = null, roadTwnValue = null, addyTwnValue = null, valRaw, val;
 				try{
 					switch(categroy){
 						case 'town':
 							if(this.currentTown.data.hasOwnProperty('OBJECTID')){
-								console.debug('town has ObjectID - ok to continue');
+								//console.debug('town has ObjectID - ok to continue');
 								this.updateBlockGroupName("");
 								//update the UI title
 								$('#town_name_label').html('Town of ' + this.currentTown.data[this.regionConfig.townsLayer_NameField]);
 
 								//Social Vulnerability Ranking and Score Details - display all as %
-								console.debug('settting SV slider bar with val - ', this.currentTown.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank])
-								$("#sv_slider").slider("value", this.currentTown.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100);
-								$("#custom-handle").html(this.currentTown.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100);
+								val = this.currentTown.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100;
+								$("#sv_slider").slider("value", parseFloat(Math.round(val * 100) / 100).toFixed(2));
+								$("#custom-handle").html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+								//$("$sv_title").html();
+
 								//detail groups
 								_.each(this.regionConfig.criticalFields.common.socioeconomic, lang.hitch(this,function(fieldName) {
-									this.$el.find("#metric_"+fieldName).html(this.currentTown.data[fieldName] * 100);
+									valRaw = this.currentTown.data[fieldName];
+									if (typeof valRaw === 'number'){
+										val = this.currentTown.data[fieldName] * 100;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+									}else{
+										this.$el.find("#metric_"+fieldName).html('--');
+									}
 								}));
 								_.each(this.regionConfig.criticalFields.common.householdComp, lang.hitch(this,function(fieldName) {
-									this.$el.find("#metric_"+fieldName).html(this.currentTown.data[fieldName] * 100);
+									valRaw = this.currentTown.data[fieldName];
+									if (typeof valRaw === 'number'){
+										val = this.currentTown.data[fieldName] * 100;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+									}else{
+										this.$el.find("#metric_"+fieldName).html('--');
+									}
 								}));
 								_.each(this.regionConfig.criticalFields.common.minotiry, lang.hitch(this,function(fieldName) {
-									this.$el.find("#metric_"+fieldName).html(this.currentTown.data[fieldName] * 100);
+									valRaw = this.currentTown.data[fieldName];
+									if (typeof valRaw === 'number'){
+										val = this.currentTown.data[fieldName] * 100;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+									}else{
+										this.$el.find("#metric_"+fieldName).html('--');
+									}
 								}));
 								_.each(this.regionConfig.criticalFields.common.housing, lang.hitch(this,function(fieldName) {
-									this.$el.find("#metric_"+fieldName).html(this.currentTown.data[fieldName] * 100);
+									valRaw = this.currentTown.data[fieldName];
+									if (typeof valRaw === 'number'){
+										val = this.currentTown.data[fieldName] * 100;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+									}else{
+										this.$el.find("#metric_"+fieldName).html('--');
+									}
 								}));
 
 								//set sea level sensitive metrics
 								switch(seaLevelIndex){
 									case 0:
 										//current sea level - clear the road and address values.
-										roadValue = "";
-										addyValue = "";
+										roadTwnValue = "--";
+										addyTwnValue = "--";
 										break;
 									case 1:
-										roadValue = this.currentTown.data[this.regionConfig.criticalFields.towns.costToRoad.oneFoot];
-										addyValue = this.currentTown.data[this.regionConfig.criticalFields.towns.numAddressesInaccessible.oneFoot];
+										roadTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.costToRoad.oneFoot];
+										addyTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.numAddressesInaccessible.oneFoot];
 										break;
 									case 2:
-										roadValue = this.currentTown.data[this.regionConfig.criticalFields.towns.costToRoad.twoFoot];
-										addyValue = this.currentTown.data[this.regionConfig.criticalFields.towns.numAddressesInaccessible.twoFoot];
+										roadTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.costToRoad.twoFoot];
+										addyTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.numAddressesInaccessible.twoFoot];
 										break;
 									case 3:
-										roadValue = this.currentTown.data[this.regionConfig.criticalFields.towns.costToRoad.threeFoot];
-										addyValue = this.currentTown.data[this.regionConfig.criticalFields.towns.numAddressesInaccessible.threeFoot];
+										roadTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.costToRoad.threeFoot];
+										addyTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.numAddressesInaccessible.threeFoot];
 										break;
 									case 4:
-										roadValue = this.currentTown.data[this.regionConfig.criticalFields.towns.costToRoad.sixFoot];
-										addyValue = this.currentTown.data[this.regionConfig.criticalFields.towns.numAddressesInaccessible.sixFoot]
+										roadTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.costToRoad.sixFoot];
+										addyTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.numAddressesInaccessible.sixFoot]
 										break;
 								}
-								this.$el.find("#metric_costToRoad").html(roadValue);
-								this.$el.find("#metric_numAddy").html(addyValue);
+								if(typeof roadTwnValue != 'number'){
+									this.$el.find("#metric_costToRoad").html(roadTwnValue);
+								}else{
+									this.$el.find("#metric_costToRoad").html(this.addCommas(roadTwnValue));
+								}
+								//this.$el.find("#metric_costToRoad").html(this.addCommas(roadTwnValue));
+								this.$el.find("#metric_numAddy").html(addyTwnValue);
+
+								//TODO hide the smaller 'town totals' area, clear the values
+								roadTwnValue = "--";
+								addyTwnValue = "--";
+								this.$el.find("#metric_costToRoad_twn").html(roadTwnValue);
+								this.$el.find("#metric_numAddy_twn").html(addyTwnValue);
+								$('.marine-risk .stats .stat .twinPanel .town').removeClass('active');
+
 							}					
 							break;
 						case 'blockgroup':
 							if(this.currentBlockGroup.data.hasOwnProperty('OBJECTID')){
-								console.debug('block group has ObjectID - ok to continue');
+								//console.debug('block group has ObjectID - ok to continue');
 								this.updateBlockGroupName(this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField]);
 								//update the UI title - town + blockgroup
-								$('#town_name_label').html('Town of ' + this.currentTown.data[this.regionConfig.townsLayer_NameField] + ' ' + this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField]);
+								//$('#town_name_label').html('Town of ' + this.currentTown.data[this.regionConfig.townsLayer_NameField] + ' ' + this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField]);
+								$('#town_name_label').html(this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField]);
 
 								//Social Vulnerability Ranking and Score Details - display all as %
-								console.debug('settting SV slider bar with val - ', this.currentBlockGroup.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank])
-								$("#sv_slider").slider("value", this.currentBlockGroup.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100);
-								$("#custom-handle").html(this.currentBlockGroup.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100);
+								val = this.currentBlockGroup.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100;
+								$("#sv_slider").slider("value", parseFloat(Math.round(val * 100) / 100).toFixed(2));
+								$("#custom-handle").html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+
 								//detail groups
 								_.each(this.regionConfig.criticalFields.common.socioeconomic, lang.hitch(this,function(fieldName) {
-									this.$el.find("#metric_"+fieldName).html(this.currentBlockGroup.data[fieldName] * 100);
+									//this.$el.find("#metric_"+fieldName).html(this.currentBlockGroup.data[fieldName] * 100);
+									valRaw = this.currentBlockGroup.data[fieldName];
+									if (typeof valRaw === 'number'){
+										val = this.currentBlockGroup.data[fieldName] * 100;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+									}else{
+										this.$el.find("#metric_"+fieldName).html('--');
+									}
 								}));
 								_.each(this.regionConfig.criticalFields.common.householdComp, lang.hitch(this,function(fieldName) {
-									this.$el.find("#metric_"+fieldName).html(this.currentBlockGroup.data[fieldName] * 100);
+									valRaw = this.currentBlockGroup.data[fieldName];
+									if (typeof valRaw === 'number'){
+										val = this.currentBlockGroup.data[fieldName] * 100;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+									}else{
+										this.$el.find("#metric_"+fieldName).html('--');
+									}
 								}));
 								_.each(this.regionConfig.criticalFields.common.minotiry, lang.hitch(this,function(fieldName) {
-									this.$el.find("#metric_"+fieldName).html(this.currentBlockGroup.data[fieldName] * 100);
+									valRaw = this.currentBlockGroup.data[fieldName];
+									if (typeof valRaw === 'number'){
+										val = this.currentBlockGroup.data[fieldName] * 100;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+									}else{
+										this.$el.find("#metric_"+fieldName).html('--');
+									}
 								}));
 								_.each(this.regionConfig.criticalFields.common.housing, lang.hitch(this,function(fieldName) {
-									this.$el.find("#metric_"+fieldName).html(this.currentBlockGroup.data[fieldName] * 100);
+									valRaw = this.currentBlockGroup.data[fieldName];
+									if (typeof valRaw === 'number'){
+										val = this.currentBlockGroup.data[fieldName] * 100;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+									}else{
+										this.$el.find("#metric_"+fieldName).html('--');
+									}
 								}));
 
 								//set sea level sensitive metrics
 								switch(seaLevelIndex){
 									case 0:
 										//current sea level - clear the road and address values.
-										roadValue = "";
-										addyValue = "";
+										roadBGValue = "--";
+										addyBGValue = "--";
+										roadTwnValue = "--";
+										addyTwnValue = "--";
 										break;
 									case 1:
-										roadValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.costToRoad.oneFoot];
-										addyValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.numAddressesInaccessible.oneFoot];
+										roadBGValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.costToRoad.oneFoot];
+										addyBGValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.numAddressesInaccessible.oneFoot];
+										roadTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.costToRoad.oneFoot];
+										addyTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.numAddressesInaccessible.oneFoot];
 										break;
 									case 2:
-										roadValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.costToRoad.twoFoot];
-										addyValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.numAddressesInaccessible.twoFoot];
+										roadBGValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.costToRoad.twoFoot];
+										addyBGValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.numAddressesInaccessible.twoFoot];
+										roadTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.costToRoad.twoFoot];
+										addyTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.numAddressesInaccessible.twoFoot];
 										break;
 									case 3:
-										roadValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.costToRoad.threeFoot];
-										addyValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.numAddressesInaccessible.threeFoot];
+										roadBGValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.costToRoad.threeFoot];
+										addyBGValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.numAddressesInaccessible.threeFoot];
+										roadTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.costToRoad.threeFoot];
+										addyTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.numAddressesInaccessible.threeFoot];
 										break;
 									case 4:
-										roadValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.costToRoad.sixFoot];
-										addyValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.numAddressesInaccessible.sixFoot]
+										roadBGValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.costToRoad.sixFoot];
+										addyBGValue = this.currentBlockGroup.data[this.regionConfig.criticalFields.blockGroups.numAddressesInaccessible.sixFoot]
+										roadTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.costToRoad.sixFoot];
+										addyTwnValue = this.currentTown.data[this.regionConfig.criticalFields.towns.numAddressesInaccessible.sixFoot]
 										break;
 								}
-								this.$el.find("#metric_costToRoad").html(roadValue);
-								this.$el.find("#metric_numAddy").html(addyValue);
+								if(typeof roadBGValue != 'number'){
+									this.$el.find("#metric_costToRoad").html(roadBGValue);
+								}else{
+									this.$el.find("#metric_costToRoad").html(this.addCommas(roadBGValue));
+								}
+								this.$el.find("#metric_numAddy").html(addyBGValue);
+
+								//show the town data also
+								$('.marine-risk .stats .stat .twinPanel .town').addClass('active');
+								if(typeof roadTwnValue != 'number'){
+									this.$el.find("#metric_costToRoad_twn").html(roadTwnValue);
+								}else{
+									this.$el.find("#metric_costToRoad_twn").html(this.addCommas(roadTwnValue));
+								}
+								
+								this.$el.find("#metric_numAddy_twn").html(addyTwnValue);
 							}
 							break;
 						default:
 							console.error('Error: invalid category.');
 							return;
 					}
-
 				}catch (ex){
 					console.error('Error; Marine Risk Explorer; main.js; updateMetrics()');
 				}
@@ -1066,6 +1170,17 @@ define([
 				window.setTimeout(function() {
                     postModalDeferred.resolve();
                 }, 100);
+			},
+			addCommas: function(nStr) {
+			    nStr += '';
+			    var x = nStr.split('.');
+			    var x1 = x[0];
+			    var x2 = x.length > 1 ? '.' + x[1] : '';
+			    var rgx = /(\d+)(\d{3})/;
+			    while (rgx.test(x1)) {
+			        x1 = x1.replace(rgx, '$1' + ',' + '$2');
+			    }
+			    return x1 + x2;
 			},
 			/** 
 			 * Method: methodStub
