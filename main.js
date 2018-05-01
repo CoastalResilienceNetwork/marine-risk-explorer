@@ -3,24 +3,17 @@ define([
 	"dojo/_base/lang",
 	"dojo/promise/all",
 	"framework/PluginBase",
-	"esri/layers/VectorTileLayer",
-	"esri/layers/ArcGISTiledMapServiceLayer",
 	"esri/layers/ArcGISDynamicMapServiceLayer",
 	"esri/layers/WMSLayer",
-	"esri/layers/WMSLayerInfo",
 	"esri/layers/FeatureLayer",
-	"esri/layers/ImageParameters",
 	"esri/geometry/Extent",
 	"esri/SpatialReference",
 	"esri/tasks/query",
 	"esri/tasks/QueryTask",
-	"esri/symbols/SimpleMarkerSymbol",
 	"esri/symbols/SimpleFillSymbol",
 	"esri/symbols/SimpleLineSymbol",
 	"esri/Color",
 	"esri/graphic",
-    "dojo/dom",
-    './State',
     'dojo/text!./region.json',
     'dojo/text!./print-setup.html',
     "dojo/text!./print_template.html",
@@ -30,24 +23,17 @@ define([
 		lang,
 		all,
 		PluginBase,
-		VectorTileLayer,
-		ArcGISTiledMapServiceLayer,
 		ArcGISDynamicMapServiceLayer,
 		WMSLayer,
-		WMSLayerInfo,
 		FeatureLayer,
-		ImageParameters,
 		Extent,
 		SpatialReference,
 		Query,
 		QueryTask,
-		SimpleMarkerSymbol,
 		SimpleFillSymbol,
 		SimpleLineSymbol,
 		Color,
 		Graphic,
-		dom,
-		State,
 		RegionConfig,
 		print_setup,
 		print_template,
@@ -55,7 +41,7 @@ define([
 		template
 	) {
 		return declare(PluginBase, {
-			toolbarName: 'Coastal Risk', //content pane title
+			toolbarName: 'Coastal Risk Explorer', //content pane title
 			fullName: 'Coastal Risk Explorer', //toolbar hover text
 			resizable: false,
 			width: 425,
@@ -75,6 +61,8 @@ define([
 			qTown: null,
 			qtBlockGroup: null,
 			qBlockGroup: null,
+			stateObj: {},
+			mapClickEvtObj: null,
 			/** 
 			 * Method: initialize
 			 * 		The framework calls this during initial framework load from the file app\js\Plugin.js (approx line 70).
@@ -83,10 +71,7 @@ define([
 			*/
 			initialize: function(frameworkParameters) {
 				console.debug('Marine Risk Explorer; main.js; initialize()');
-
 				declare.safeMixin(this, frameworkParameters);
-
-				this.state = new State({}); //possible to pass a 'data' object in to the constructor, but not using here.
 				this.$el = $(this.container);
 				this.regionConfig = $.parseJSON(RegionConfig);
 				this.slrIdx = 0; // Scenario array index
@@ -97,8 +82,6 @@ define([
 					this.regionConfig.defaultExtent[3],
 					new SpatialReference({wkid: 102100})
 				);
-				this.region = this.state.getRegion(); //e.g. 'Maine'
-
 				//hide the print button at the top of the plugin window
 				$(this.printButton).hide();
 				
@@ -109,22 +92,6 @@ define([
                 townQuery.returnGeometry = false;
                 townQuery.outFields = ['*'];
 				townQueryTask.execute(townQuery, _.bind(this.loadTownsSuccess, this),_.bind(this.loadTownsError, this));
-				//townQueryTask.execute(townQuery, this.loadTownsSuccess, this.loadTownsError);
-				
-
-				// // Setup query handles
-				// if (Number.isInteger(this.regionConfig.parcelsLayer)) {
-				// 	this.qtParcels = new QueryTask(this.regionConfig.service + '/' + this.regionConfig.parcelsLayer);
-				// 	this.qParcels = new Query();
-				// 	this.qParcels.returnGeometry = true;
-				// 	this.qParcels.outFields = ['*'];
-				// }
-				
-				// if (Number.isInteger(this.regionConfig.road_stream_crossing)) {
-				// 	this.qtCrossings = new QueryTask(this.regionConfig.service + '/' + this.regionConfig.road_stream_crossing);
-				// 	this.qCrossings = new Query();
-				// 	this.qCrossings.returnGeometry = true;
-				// }
 
 				//Init Query Tasks for map click
 				this.qtTown = new QueryTask(this.regionConfig.service + '/' + this.regionConfig.townsLayer_ServiceIndex);
@@ -136,6 +103,7 @@ define([
 				this.qBlockGroup = new Query();
 				this.qBlockGroup.outFields = ['*'];
 				this.qBlockGroup.returnGeometry = true;
+				this.qBlockGroup.where = '1=1';
 
 				// Graphic Symbols
 				this.townSymbol = new SimpleFillSymbol(
@@ -151,7 +119,7 @@ define([
 					SimpleFillSymbol.STYLE_SOLID,
 					new SimpleLineSymbol(
 						SimpleLineSymbol.STYLE_SOLID,
-						new Color([60,252,252,1]), //color
+						new Color([175,175,175,1]), //color
 						5 //width
 					),
 					new Color([255, 255, 255, 0]) //white, completely transparent
@@ -161,34 +129,11 @@ define([
 					SimpleFillSymbol.STYLE_SOLID,
 					new SimpleLineSymbol(
 						SimpleLineSymbol.STYLE_SOLID,
-						new Color([60,252,60,1]), //color
-						5 //width
+						new Color([235,235,235 ,1]), //color
+						2 //width
 					),
 					new Color([255, 255, 255, 0]) //white, completely transparent
 				);
-				// this.selectedBarrierSymbol = new SimpleMarkerSymbol(
-				// 	SimpleMarkerSymbol.STYLE_CIRCLE,
-				// 	17,
-				//     new SimpleLineSymbol(
-				// 		SimpleLineSymbol.STYLE_SOLID,
-				// 		new Color([255, 235, 59, 1]),
-				// 		3
-				// 	),
-				// 	new Color([225, 96, 82, 1])
-				// );
-
-				// this.highlightParcelSymbol = new SimpleFillSymbol(
-				// 	SimpleFillSymbol.STYLE_SOLID,
-				// 	new SimpleLineSymbol(
-				// 		SimpleLineSymbol.STYLE_SOLID,
-				// 		new Color([255,204,0,0.5]),
-				// 		4
-				// 	),
-				// 	new Color([255, 255, 255, 0.0])
-				// );
-				// $(this.legendContainer).html('<div class="selected-barrier-lgnd" style="display: none;"><svg width="20" height="20"><circle fill="rgb(225, 96, 82)" stroke="rgb(255, 235, 59)" stroke-width="3" cx="10" cy="10" r="7"></circle></svg> <span style="position: relative; top:-5px;">Selected Barrier</span></div>');
-				// this.initialized = true;
-				// return this;
 			},
 			/** 
 			 * Method: activate
@@ -199,77 +144,87 @@ define([
 			*/			
 			activate: function() {
 				console.debug('Marine Risk Explorer; main.js; activate()');
-				//TODO eliminate need for self = this;
-				var self = this;
-
-				this.layers = {};
-				// Only set the extent the first time the app is activated
 				if(!this.activated){
+					//console.debug('Not Activated: Activating');
 					this.map.setExtent(this.defaultExtent);
-				}
+					//TODO eliminate need for self = this;
+					var self = this;
 
-				// NOTE Order added here is important because it is draw order on the map
-				// First in draws below others, etc. Last in draws on top.
-				if (this.regionConfig.lidar && !this.layers.lidar) {
-					this.layers.lidar = new WMSLayer(this.regionConfig.lidar, {
-						visible: false,
-						visibleLayers: this.regionConfig.lidarLayers
-					});
-					this.map.addLayer(this.layers.lidar);
-				}
-				//DYNAMIC MAP SERVICE LAYERS
-				//All layers
-				if (this.regionConfig.service && !this.layers.coastalRisk) {
-					this.layers.coastalRisk = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
-						id: 'coastalRisk'
-					});
+					this.layers = {};
+					// Only set the extent the first time the app is activated
 					
-					this.layers.coastalRisk.setVisibleLayers(this.regionConfig.visibleLayerGroups.default);
-					this.map.addLayer(this.layers.coastalRisk);
-				}
-				//Sea Level
-				if (this.regionConfig.service && !this.layers.seaLevelRise) {
-					this.layers.seaLevelRise = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
-						id: 'seaLevelRise'
-					});
-					this.layers.seaLevelRise.setVisibleLayers([this.regionConfig.scenarios[0].layer]);
-					this.map.addLayer(this.layers.seaLevelRise);
-				}
+					
+					// NOTE Order added here is important because it is draw order on the map
+					// First in draws below others, etc. Last in draws on top.
+					if (this.regionConfig.lidar && !this.layers.lidar) {
+						this.layers.lidar = new WMSLayer(this.regionConfig.lidar, {
+							visible: false,
+							visibleLayers: this.regionConfig.lidarLayers
+						});
+						this.map.addLayer(this.layers.lidar);
+					}
+					//DYNAMIC MAP SERVICE LAYERS
+					//All layers
+					if (this.regionConfig.service && !this.layers.coastalRisk) {
+						this.layers.coastalRisk = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
+							id: 'coastalRisk'
+						});
+						
+						this.layers.coastalRisk.setVisibleLayers(this.regionConfig.visibleLayerGroups.default);
+						this.map.addLayer(this.layers.coastalRisk);
+					}
+					//Sea Level
+					if (this.regionConfig.service && !this.layers.seaLevelRise) {
+						this.layers.seaLevelRise = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
+							id: 'seaLevelRise'
+						});
+						this.layers.seaLevelRise.setVisibleLayers([this.regionConfig.scenarios[0].layer]);
+						this.map.addLayer(this.layers.seaLevelRise);
+					}
 
-				//Road Stream Crossing
-				if (this.regionConfig.service && !this.layers.roadStreamCrossing) {
-					this.layers.roadStreamCrossing = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
-						id: 'roadStreamCrossing',
-						visible:false
-					});
-					this.layers.roadStreamCrossing.setVisibleLayers([this.regionConfig.roadStreamCrossing_ServiceIndex]);
-					this.map.addLayer(this.layers.roadStreamCrossing);
-				}	
+					//Road Stream Crossing
+					if (this.regionConfig.service && !this.layers.roadStreamCrossing) {
+						this.layers.roadStreamCrossing = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
+							id: 'roadStreamCrossing',
+							visible:false
+						});
+						this.layers.roadStreamCrossing.setVisibleLayers([this.regionConfig.roadStreamCrossing_ServiceIndex]);
+						this.map.addLayer(this.layers.roadStreamCrossing);
+					}	
 
-				//GRAPHICS LAYERS
-				//Town graphic layers (important that these are created before the Feature Layer. Otherwise there is mouse-over/mouse-out mayhem for the feature layer, at least in chrome)
-				if(!this.layers.selectedTownGraphics){
-					this.layers.selectedTownGraphics = new esri.layers.GraphicsLayer();
-					this.map.addLayer(this.layers.selectedTownGraphics);
-				}
-				if(!this.layers.townGraphics){
-					this.layers.townGraphics = new esri.layers.GraphicsLayer({
-						//maxScale: 36111.911040
-					});
-					this.map.addLayer(this.layers.townGraphics);
-				}
-				//Block Group graphic layers (important that these are created before the Feature Layer. Otherwise there is mouse-over/mouse-out mayhem for the feature layer, at least in chrome)
-				if(!this.layers.selectedBlockGroupGraphics){
-					this.layers.selectedBlockGroupGraphics = new esri.layers.GraphicsLayer();
-					this.map.addLayer(this.layers.selectedBlockGroupGraphics);
-				}
+					//GRAPHICS LAYERS
+					//Town graphic layers (important that these are created before the Feature Layer. Otherwise there is mouse-over/mouse-out mayhem for the feature layer, at least in chrome)
+					if(!this.layers.selectedTownGraphics){
+						this.layers.selectedTownGraphics = new esri.layers.GraphicsLayer();
+						this.map.addLayer(this.layers.selectedTownGraphics);
+					}
+					if(!this.layers.townGraphics){
+						this.layers.townGraphics = new esri.layers.GraphicsLayer({
+							//maxScale: 36111.911040
+						});
+						this.map.addLayer(this.layers.townGraphics);
+					}
+					//Block Group graphic layers (important that these are created before the Feature Layer. Otherwise there is mouse-over/mouse-out mayhem for the feature layer, at least in chrome)
+					if(!this.layers.selectedBlockGroupGraphics){
+						this.layers.selectedBlockGroupGraphics = new esri.layers.GraphicsLayer();
+						this.map.addLayer(this.layers.selectedBlockGroupGraphics);
+					}
 
-				// Set marsh scenario.  Will default to 0 unless a share link was used to initalize different values
-				this.setMarshScenario(this.slrIdx);
-				this.$el.find("#salt-marsh-slider").slider("value", this.slrIdx);
+					this.layers.townFL = new FeatureLayer(this.regionConfig.service + '/' + this.regionConfig.townsLayer_ServiceIndex, {
+						mode: FeatureLayer.MODE_SNAPSHOT,
+						outFields: ['OBJECTID']
+					});
+					this.map.addLayer(this.layers.townFL);
+
+					// // Set marsh scenario.  Will default to 0 unless a share link was used to initalize different values
+					// this.setMarshScenario(this.slrIdx);
+					// this.$el.find("#salt-marsh-slider").slider("value", this.slrIdx);
+
+					
+					this.render();
+				}
 
 				this.activated = true;
-				this.render();
 			},
 			/** 
 			 * Method: render
@@ -290,10 +245,8 @@ define([
 					intro: this.regionConfig.intro,
 					townLabel: this.regionConfig.townLabel,
 					globalRegion: this.regionConfig.globalRegion,
-					//towns: Object.keys(this.townNames).sort(),
 					towns: this.townNames,
 					region: this.region,
-					//stats: this.regionConfig.stats,
 					reportItems: this.regionConfig.report.items, 
 					lidar: this.regionConfig.lidar,
 					current_conservation_lands: Number.isInteger(this.regionConfig.current_conservation_lands),
@@ -481,9 +434,6 @@ define([
 						handle.text( $( this ).slider( "value" ) );
 					},
 					slide: function( event, ui ) {
-						//console.debug('slide: event', event);
-						//console.debug('slide: ui', ui);
-						//handle.text( ui.value );
 						return false;
 					}
 				});
@@ -499,45 +449,40 @@ define([
 			bindEvents: function() {
 				console.debug('Marine Risk Explorer; main.js; bindEvents()');
 				var self = this;
-
 				//map and layer events
-				// var townsOnMouseOver = this.layers.towns.on('mouse-over', lang.hitch(this,function(evt) {
-				// 	console.debug("towns mouse-over!");
-				// 	if (this.layers.townGraphics.graphics.length === 0){
-				// 		var highlightGraphic = new Graphic(evt.graphic.geometry, this.townSymbol, evt.graphic.attributes);
-				// 		this.layers.townGraphics.add(highlightGraphic);
-				// 	}
-				// }));
-				// var townsOnMouseOut = this.layers.towns.on('mouse-out', lang.hitch(this, function(evt) {
-				// 	console.debug("towns mouse-out!");
-				// 	if (this.layers.townGraphics.graphics.length >= 1){
-				// 		this.layers.townGraphics.clear();
-				// 	}
-				// }));
-				// var blockGroupsOnClick = this.layers.blockGroups.on('click', lang.hitch(this,function(evt) {
-				// 	console.debug("block group feature click!");
-				// 	this.zoomToBlockGroup(evt.graphic);
-				// }));
-
+				var townsOnMouseOver = this.layers.townFL.on('mouse-over', lang.hitch(this,function(evt) {
+					//console.debug("towns mouse-over!");
+					if (this.layers.townGraphics.graphics.length === 0){
+						var highlightGraphic = new Graphic(evt.graphic.geometry, this.townSymbol, evt.graphic.attributes);
+						this.layers.townGraphics.add(highlightGraphic);
+					}
+				}));
+				var townsOnMouseOut = this.layers.townFL.on('mouse-out', lang.hitch(this, function(evt) {
+					//console.debug("towns mouse-out!");
+					if (this.layers.townGraphics.graphics.length >= 1){
+						this.layers.townGraphics.clear();
+					}
+				}));
 				this.marineRiskMapClickEvent = this.map.on('click', lang.hitch(this, function(evt) { 
-					//console.debug("map click!");
+					//console.debug("map click!", evt);
+					this.qBlockGroup.where = '1=1';
 					this.qBlockGroup.geometry = evt.mapPoint;
 					var deferredBlockGroup = this.qtBlockGroup.execute(this.qBlockGroup);
 					//Town Check: is BG still in the currently selected town? If not, change town selection in map and in DDL, but do not fire on-change for the DDL.
-					//TODO - this action raises the question of how the user can cange the metrics view back to town after picking a BG? Currently the only way is to 
-					// 	select a new town, then go back to the current town.
+					this.qTown.where = '1=1';
 					this.qTown.geometry = evt.mapPoint;
 					var deferredTown = this.qtTown.execute(this.qTown);
-					//using dojo/promise/all to group these two asych queries and handle after all are complete.
+					//using dojo/promise/all to group these two async queries (promises) and handle after all are complete. Otherwise nasty race-condition errors.
 					all([deferredBlockGroup, deferredTown]).then(lang.hitch(this,function(featSets){
-						console.debug('all() deferred results: ', featSets);
+						//console.debug('all() deferred results: ', featSets);
 						try{
 							//Block Group
 							if (featSets[0].features.length >= 1){
 								this.setCurrentBlockGroup(featSets[0].features[0]);
-								this.zoomToBlockGroup(featSets[0].features[0]);
+								//this.zoomToBlockGroup(featSets[0].features[0]);
+								this.clearSelectedBlockGroupGraphics();
+								this.drawSelectedBlockGroupGraphics(featSets[0].features[0]);
 								this.updateBlockGroupName(featSets[0].features[0].attributes[this.regionConfig.blockGroupLayer_NameField]);
-								
 								//Town Check
 								if (featSets[1].features.length >= 1){
 									if(featSets[1].features[0].attributes[this.regionConfig.townsLayer_NameField] != this.currentTown.name){
@@ -552,17 +497,11 @@ define([
 									}
 								} else {
 									console.debug('No Towns Found');
-									//TODO ? msg to user - no block group found
 								}
-
-								this.updateMetrics('blockgroup',self.$el.find("#salt-marsh-slider").slider("value"));
+								this.updateMetrics('blockgroup',this.$el.find("#salt-marsh-slider").slider("value"));
 							} else {
 								console.debug('No Block Groups Found');
-								//TODO show data for the town then?
-								//TODO this can also occurr (other than clicking in no-mans-land) when clicking on a town with no block groups, 
-								//	as in 'Marion Twp' or 'Whiting' (the grey ones on the map)
 							}
-							
 						}catch(err){
 							console.error('map click data processing error:',err);
 						}
@@ -584,9 +523,14 @@ define([
 					}
 				});
 
-				this.$el.find('.carrotToggle').on('click',function(a,b,c){
+				this.$el.find('.carrotToggle').on('click',lang.hitch(this,function(a,b,c){
 					$('.stats .stat .statGrid').toggleClass('active');
-				});
+					if($('.stats .stat .statGrid').hasClass('active')){
+						this.$el.find('.carrotToggle').html('Hide Details');
+					}else{
+						this.$el.find('.carrotToggle').html('Show Details');
+					}
+				}));
 
 				//Additional Layers checkboxes
 				this.$el.find('.layer input').on('change', function(e) {
@@ -601,20 +545,99 @@ define([
 						layer.find('.transparency-control').css('display', 'none');
 					}
 				});
-
+				//Print Report - triggers the click event on the native print. See prePrintModal() and postPrintModal() methods in this file for print handling logic.
 				this.$el.find('.export .print').on('click', function() {
 					self.$el.parent('.sidebar').find('.plugin-print').trigger('click');
 				});
-
+				//Data Notes - opens the notes.html content
 				this.$el.find('.export .notes').on('click', function() {
 					TINY.box.show({
 				        animate: true,
-				        url: 'plugins/future-habitat-v2/notes.html',
+				        url: 'plugins/marine-risk-explorer/notes.html',
 				        fixed: true,
 				        width: 560,
 				        height: 700
 				    });
 				});
+				//save and share handling
+				this.layers.coastalRisk.on("load", lang.hitch(this,function(){
+					//console.debug('coastalRisk load!', this.stateObj);
+					//Check Save-n-Share State, update UI if opening from a Save-n-Share link
+					//If there is a Block Group, get both Block Group and Town info.
+					if(this.stateObj && this.stateObj.hasOwnProperty('blockGroupOID')){
+						//block group and town
+						//console.debug('running Block Group and Town async queries');
+						this.qBlockGroup.where = "OBJECTID = " + this.stateObj.blockGroupOID;
+						var deferredBG = this.qtBlockGroup.execute(this.qBlockGroup);
+						this.qTown.where = "OBJECTID = " + this.stateObj.townOID;
+						var deferredT = this.qtTown.execute(this.qTown);
+						var sliderIndex = this.stateObj.slrIdx;
+						//using dojo/promise/all to group these two async queries (promises) and handle after all are complete. Otherwise nasty race-condition errors.
+						all([deferredBG, deferredT]).then(lang.hitch(this,function(featSets){
+							console.debug('all() deferred results: featSets: ', featSets);
+							console.debug('all() deferred results: this.stateObj: ', this.stateObj);
+							console.debug('all() deferred results: sliderIndex: ', sliderIndex);
+							try{
+								//Block Group
+								if (featSets[0].features.length >= 1){
+									this.setCurrentBlockGroup(featSets[0].features[0]);
+									this.zoomToBlockGroup(featSets[0].features[0]);
+									this.updateBlockGroupName(featSets[0].features[0].attributes[this.regionConfig.blockGroupLayer_NameField]);
+									
+									//Town Check
+									if (featSets[1].features.length >= 1){
+										if(featSets[1].features[0].attributes[this.regionConfig.townsLayer_NameField] != this.currentTown.name){
+											console.debug('town names do not match, change selected town');
+											this.clearSelectedTownGraphics();
+											this.drawSelectedTownGraphics(featSets[1].features[0]);
+											this.setCurrentTown(featSets[1].features[0]);
+											//Update the town ddl to the new town.
+											this.$el.find('.custom-combobox-input').val(featSets[1].features[0].attributes[this.regionConfig.townsLayer_NameField]);
+										}else {
+											console.debug('town names match');
+										}
+									} else {
+										console.debug('No Towns Found');
+									}
+									//set slider
+									this.$el.find("#salt-marsh-slider").slider("value", sliderIndex);
+									//initiate getting metrics
+									this.setMarshScenario(sliderIndex);
+									//this.stateObj = {};
+								} else {
+									console.debug('No Block Groups Found');
+								}
+								
+							}catch(err){
+								console.error('save and share data processing error:',err);
+							}
+						}));
+					} else if(this.stateObj && this.stateObj.hasOwnProperty('townOID')){
+						//town only
+						console.debug('Using save-and-share for Town only');
+						console.debug(this.stateObj);
+						this.qTown.where = "OBJECTID = " + this.stateObj.townOID;
+						var sliderIndex = this.stateObj.slrIdx;
+						this.qtTown.execute(this.qTown, lang.hitch(this,function(featSet){
+							console.debug('town query success: featSet = ', featSet);
+							console.debug('town query success: slider index = ', sliderIndex);
+							if(featSet.features.length >= 1){
+								this.setCurrentBlockGroup({});
+								this.clearSelectedBlockGroupGraphics();
+								this.setCurrentTown(featSet.features[0]);
+								this.zoomToTown(featSet.features[0]);
+								//Update the town ddl to the new town.
+								this.$el.find('.custom-combobox-input').val(featSet.features[0].attributes[this.regionConfig.townsLayer_NameField]);
+								//set slider
+								this.$el.find("#salt-marsh-slider").slider("value", sliderIndex);
+								//initiate getting metrics
+								this.setMarshScenario(sliderIndex);
+							}
+						}), lang.hitch(this, function(err){
+							console.debug('town query error: err = ', err);
+						}));
+					}
+				}));
 			},
 			/** 
 			 * Method: deactivate
@@ -634,7 +657,7 @@ define([
 				this.currentBlockGroup = {"name": '', "data":{}};
 				//remove map click event
 				this.marineRiskMapClickEvent.remove();
-				
+				this.activated = false;
 			},
 			/** 
 			 * Method: hibernate
@@ -657,17 +680,21 @@ define([
 			/** 
 			 * Method: getState
 			 * 		Used by the framework's 'Save And Share' feature as an override method for the plugin to pass plugin-specific data to the framework URL creation process.
-			 * 		Note: No need to pass current map extents out as the framework appears to be handle that.
+			 * 		Note: No need to pass current map extents out as the framework appears to handle that.
 			 * Args:
 			 * 		
 			*/
 			getState: function(data) {
 				console.debug('marine_risk_explorer; main.js; getState()');
-				console.debug('data = ', data);
-                // return {
-                // 	slrIdx: this.state.getSLRIdx(),
-                //     region: this.state.getRegion()
-                // };
+				this.stateObj = {};
+				if (this.currentBlockGroup.hasOwnProperty('data') && this.currentBlockGroup.data.hasOwnProperty('OBJECTID')){
+					this.stateObj.blockGroupOID = this.currentBlockGroup.data.OBJECTID;
+				}
+				if (this.currentTown.hasOwnProperty('data') && this.currentTown.data.hasOwnProperty('OBJECTID')){
+					this.stateObj.townOID = this.currentTown.data.OBJECTID;	
+				}
+				this.stateObj.slrIdx = this.$el.find("#salt-marsh-slider").slider("value");
+				return this.stateObj;
             },
 			/** 
 			 * Method: setState
@@ -678,11 +705,8 @@ define([
 			 * 		
 			*/
 			setState: function(data) {
-				console.debug('Marine Risk Explorer; main.js; setState()');
-				// this.state = new State(data);
-				// this.region = data.region;
-				// this.slrIdx = data.slrIdx;
-				// this.$el.find('#chosenRegion').val(data.region).trigger("chosen:updated");
+				console.debug('Marine Risk Explorer; main.js; setState()',data);
+				this.stateObj = data;
 			},
 			
             /** 
@@ -693,15 +717,10 @@ define([
 			*/
 			loadTownsSuccess:function(queryResults){
 				console.debug('Marine Risk Explorer; main.js; loadTownsSuccess()');
-				//console.debug(queryResults);
 				this.townNames = [];
 				$.each(queryResults.features, _.bind(function(idx, feat){
 					this.townNames.push(feat.attributes[this.regionConfig.townsLayer_NameField]);
 				},this));
-				// console.debug(this.townNames);
-				// _.each(this.townNames, function(val, idx) { 
-				// 	console.debug(val);
-				// });
 			},
 			/** 
 			 * Method: loadTownsError
@@ -823,6 +842,8 @@ define([
 						this.currentTown.name = feat.attributes[this.regionConfig.townsLayer_NameField];
 						this.currentTown.data = feat.attributes;
 					}else{
+						this.currentTown.name = '';
+						this.currentTown.data = {};
 						this.currentBlockGroup.name = '';
 						this.currentBlockGroup.data = {};
 					}
@@ -872,48 +893,52 @@ define([
 			 * 		idx {number} - integer representing the slider index
 			*/
 			setMarshScenario: function(idx) {
-				console.debug('Marine Risk Explorer; main.js; setMarshScenario() idx=', idx);
-				this.idx = idx;
-				this.state = this.state.setSLRIdx(idx);
-				this.$el.find('.salt-marsh-control').attr('data-scenario-idx', idx); //sets the slider index?
-				var layerIds = this.regionConfig.scenarios.map(function(scenario) {
-					return scenario.layer;
-				});
-				if (this.regionConfig.scenariosAdditive) {
-					this.layers.seaLevelRise.setVisibleLayers(layerIds.slice(0, idx + 1));
-				} else {
-					this.layers.seaLevelRise.setVisibleLayers([layerIds[idx]]);
+				try{
+					console.debug('Marine Risk Explorer; main.js; setMarshScenario() idx=', idx);
+					this.idx = idx;
+					var layerIds = this.regionConfig.scenarios.map(function(scenario) {
+						return scenario.layer;
+					});
+					if (this.regionConfig.scenariosAdditive) {
+						console.debug('sea level layers are additive');
+						this.layers.seaLevelRise.setVisibleLayers(layerIds.slice(0, idx + 1));
+					} else {
+						console.debug('sea level layers are not additive');
+						this.layers.seaLevelRise.setVisibleLayers([layerIds[idx]]);
+					}
+					this.layers.seaLevelRise.refresh();
+					//update other visible layers based on sea level setting
+					var lyrAry = null;
+					switch(idx){
+						case 0:
+							lyrAry = this.regionConfig.visibleLayerGroups.default;
+							break;
+						case 1:
+							lyrAry = this.regionConfig.visibleLayerGroups.oneFoot;
+							break;
+						case 2:
+							lyrAry = this.regionConfig.visibleLayerGroups.twoFoot;
+							break;
+						case 3:
+							lyrAry = this.regionConfig.visibleLayerGroups.threeFoot;
+							break;
+						case 4:
+							lyrAry = this.regionConfig.visibleLayerGroups.sixFoot;
+							break;
+					}
+					console.debug(lyrAry);
+					this.layers.coastalRisk.setVisibleLayers(lyrAry);
+					this.layers.coastalRisk.refresh();
+					//update data - if currentBlockGroup.data has an objedtid property, assume we are looking at a blockgroup, otherwise town
+					console.debug('currentBlockGroup.data.hasOwnProperty("OBJECTID")?: ', this.currentBlockGroup.data.hasOwnProperty("OBJECTID"));
+					if(this.currentBlockGroup.hasOwnProperty("data") && this.currentBlockGroup.data.hasOwnProperty("OBJECTID")){
+						this.updateMetrics('blockgroup', idx);
+					}else if(this.currentTown.hasOwnProperty("data") && this.currentTown.data.hasOwnProperty("OBJECTID")){
+						this.updateMetrics('town', idx);
+					}
+				}catch(err){
+					console.error('Set slider index errro: ', err);
 				}
-				this.layers.seaLevelRise.refresh();
-				//update other visible layers based on sea level setting
-				var lyrAry = null;
-				switch(idx){
-					case 0:
-						lyrAry = this.regionConfig.visibleLayerGroups.default;
-						break;
-					case 1:
-						lyrAry = this.regionConfig.visibleLayerGroups.oneFoot;
-						break;
-					case 2:
-						lyrAry = this.regionConfig.visibleLayerGroups.twoFoot;
-						break;
-					case 3:
-						lyrAry = this.regionConfig.visibleLayerGroups.threeFoot;
-						break;
-					case 4:
-						lyrAry = this.regionConfig.visibleLayerGroups.sixFoot;
-						break;
-				}
-				this.layers.coastalRisk.setVisibleLayers(lyrAry);
-				this.layers.coastalRisk.refresh();
-				//update data - if currentBlockGroup.data has an objedtid property, assume we are looking at a blockgroup, otherwise town
-				console.debug('currentBlockGroup.data.hasOwnProperty("OBJECTID")?: ', this.currentBlockGroup.data.hasOwnProperty("OBJECTID"));
-				if(this.currentBlockGroup.data.hasOwnProperty("OBJECTID")){
-					this.updateMetrics('blockgroup', idx);
-				}else{
-					this.updateMetrics('town', idx);
-				}
-				
 			},
 			/** 
 			 * Method: updateMetrics
@@ -924,7 +949,9 @@ define([
 			*/		
 			updateMetrics: function(categroy, seaLevelIndex){
 				console.debug('Marine Risk Explorer; main.js; updateMetrics() for ' + categroy);
-				var roadBGValue = null, addyBGValue = null, roadTwnValue = null, addyTwnValue = null, valRaw, val;
+				console.debug('sea level idx: ', seaLevelIndex);
+				var roadBGValue = null, addyBGValue = null, roadTwnValue = null, addyTwnValue = null, valRaw = null, val = null, 
+					lastVal = 0, highValFieldName = null, svToolTipString = '';
 				try{
 					switch(categroy){
 						case 'town':
@@ -932,51 +959,90 @@ define([
 								//console.debug('town has ObjectID - ok to continue');
 								this.updateBlockGroupName("");
 								//update the UI title
-								$('#town_name_label').html('Town of ' + this.currentTown.data[this.regionConfig.townsLayer_NameField]);
+								//$('#town_name_label').html('Town of ' + this.currentTown.data[this.regionConfig.townsLayer_NameField]);
 
 								//Social Vulnerability Ranking and Score Details - display all as %
 								val = this.currentTown.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100;
-								$("#sv_slider").slider("value", parseFloat(Math.round(val * 100) / 100).toFixed(2));
-								$("#custom-handle").html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
-								//$("$sv_title").html();
+								$("#sv_slider").slider("value", parseFloat(Math.round(val * 100) / 100).toFixed(0));
+								$("#custom-handle").html(parseFloat(Math.round(val * 100) / 100).toFixed(0) + '%');
+								svToolTipString = "The town of "+this.currentTown.data[this.regionConfig.townsLayer_NameField]+" is in the "+parseFloat(Math.round(val * 100) / 100).toFixed(0)+"th percentile and is more vulnerable than "+parseFloat(Math.round(val * 100) / 100).toFixed(0)+"% of other coastal Maine towns.";
+								$("#svTooltip").attr("title",svToolTipString);
 
 								//detail groups
+								//clear any previous highest-value highlighting
+								this.$el.find(".statGrid .statGridColumn ul li").removeClass('hilite');
+
 								_.each(this.regionConfig.criticalFields.common.socioeconomic, lang.hitch(this,function(fieldName) {
 									valRaw = this.currentTown.data[fieldName];
 									if (typeof valRaw === 'number'){
-										val = this.currentTown.data[fieldName] * 100;
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+										if(fieldName != "E_PCI"){
+											val = this.currentTown.data[fieldName] * 100;
+											if (val > lastVal){
+												highValFieldName = fieldName;
+											}
+											lastVal = val;
+											this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
+										} else {
+											this.$el.find("#metric_"+fieldName).html(this.addCommas(this.currentTown.data[fieldName]));
+										}
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
+								lastVal = 0;
+								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
+								highValFieldName = null;
+
 								_.each(this.regionConfig.criticalFields.common.householdComp, lang.hitch(this,function(fieldName) {
 									valRaw = this.currentTown.data[fieldName];
 									if (typeof valRaw === 'number'){
 										val = this.currentTown.data[fieldName] * 100;
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+										if (val > lastVal){
+											highValFieldName = fieldName;
+										}
+										lastVal = val;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
+								lastVal = 0;
+								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
+								highValFieldName = null;
+
 								_.each(this.regionConfig.criticalFields.common.minotiry, lang.hitch(this,function(fieldName) {
 									valRaw = this.currentTown.data[fieldName];
 									if (typeof valRaw === 'number'){
 										val = this.currentTown.data[fieldName] * 100;
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+										if (val > lastVal){
+											highValFieldName = fieldName;
+										}
+										lastVal = val;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
+								lastVal = 0;
+								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
+								highValFieldName = null;
+
 								_.each(this.regionConfig.criticalFields.common.housing, lang.hitch(this,function(fieldName) {
 									valRaw = this.currentTown.data[fieldName];
 									if (typeof valRaw === 'number'){
 										val = this.currentTown.data[fieldName] * 100;
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+										if (val > lastVal){
+											highValFieldName = fieldName;
+										}
+										lastVal = val;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
+								lastVal = 0;
+								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
+								highValFieldName = null;
 
 								//set sea level sensitive metrics
 								switch(seaLevelIndex){
@@ -1025,51 +1091,91 @@ define([
 								this.updateBlockGroupName(this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField]);
 								//update the UI title - town + blockgroup
 								//$('#town_name_label').html('Town of ' + this.currentTown.data[this.regionConfig.townsLayer_NameField] + ' ' + this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField]);
-								$('#town_name_label').html(this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField]);
+								//$('#town_name_label').html(this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField]);
 
 								//Social Vulnerability Ranking and Score Details - display all as %
 								val = this.currentBlockGroup.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100;
-								$("#sv_slider").slider("value", parseFloat(Math.round(val * 100) / 100).toFixed(2));
-								$("#custom-handle").html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+								$("#sv_slider").slider("value", parseFloat(Math.round(val * 100) / 100).toFixed(0));
+								$("#custom-handle").html(parseFloat(Math.round(val * 100) / 100).toFixed(0) + '%');
+								svToolTipString = this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField]+" is in the "+parseFloat(Math.round(val * 100) / 100).toFixed(0)+"th percentile and is more vulnerable than "+parseFloat(Math.round(val * 100) / 100).toFixed(0)+"% of other coastal Maine block groups.";
+								$("#svTooltip").attr("title",svToolTipString);
 
 								//detail groups
+								//clear any previous highest-value highlighting
+								this.$el.find(".statGrid .statGridColumn ul li").removeClass('hilite');
+
 								_.each(this.regionConfig.criticalFields.common.socioeconomic, lang.hitch(this,function(fieldName) {
 									//this.$el.find("#metric_"+fieldName).html(this.currentBlockGroup.data[fieldName] * 100);
 									valRaw = this.currentBlockGroup.data[fieldName];
 									if (typeof valRaw === 'number'){
-										val = this.currentBlockGroup.data[fieldName] * 100;
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+										if(fieldName != "E_PCI"){
+											val = this.currentBlockGroup.data[fieldName] * 100;
+											if (val > lastVal){
+												highValFieldName = fieldName;
+											}
+											lastVal = val;
+											this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
+										}else{
+											this.$el.find("#metric_"+fieldName).html(this.addCommas(this.currentBlockGroup.data[fieldName]));
+										}
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
+								lastVal = 0;
+								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
+								highValFieldName = null;
+
 								_.each(this.regionConfig.criticalFields.common.householdComp, lang.hitch(this,function(fieldName) {
 									valRaw = this.currentBlockGroup.data[fieldName];
 									if (typeof valRaw === 'number'){
 										val = this.currentBlockGroup.data[fieldName] * 100;
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+										if (val > lastVal){
+											highValFieldName = fieldName;
+										}
+										lastVal = val;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
+								lastVal = 0;
+								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
+								highValFieldName = null;
+
 								_.each(this.regionConfig.criticalFields.common.minotiry, lang.hitch(this,function(fieldName) {
 									valRaw = this.currentBlockGroup.data[fieldName];
 									if (typeof valRaw === 'number'){
 										val = this.currentBlockGroup.data[fieldName] * 100;
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+										if (val > lastVal){
+											highValFieldName = fieldName;
+										}
+										lastVal = val;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
+								lastVal = 0;
+								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
+								highValFieldName = null;
+
 								_.each(this.regionConfig.criticalFields.common.housing, lang.hitch(this,function(fieldName) {
 									valRaw = this.currentBlockGroup.data[fieldName];
 									if (typeof valRaw === 'number'){
 										val = this.currentBlockGroup.data[fieldName] * 100;
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(2));
+										if (val > lastVal){
+											highValFieldName = fieldName;
+										}
+										lastVal = val;
+										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
+								lastVal = 0;
+								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
+								highValFieldName = null;
 
 								//set sea level sensitive metrics
 								switch(seaLevelIndex){
@@ -1131,7 +1237,17 @@ define([
 					console.error('Error; Marine Risk Explorer; main.js; updateMetrics()');
 				}
 			},
+			/** 
+			 * Method: prePrintModal
+			 * 		
+			 * Args:
+			 * 		preModalDeferred {} - 
+			 * 		$printArea {} -
+			 * 		modalSandbox {} - 
+			 * 		mapObject {} - 
+			*/		
 			prePrintModal: function (preModalDeferred, $printArea, modalSandbox, mapObject) {
+				console.debug('Marine Risk Explorer; main.js; prePrintModal()');
 				modalSandbox.append(_.template(print_setup, {}));
 				$printArea.append(_.template(print_template)({
 					printFooterTitle: this.regionConfig.printFooterTitle,
@@ -1139,31 +1255,46 @@ define([
 				}));
 				preModalDeferred.resolve();
 			},
+			/** 
+			 * Method: postPrintModal
+			 * 		
+			 * Args:
+			 * 		postModalDeferred {} - 
+			 * 		modalSandbox {} - 
+			 * 		mapObject {} - 
+			*/		
 			postPrintModal: function(postModalDeferred, modalSandbox, mapObject) {
-				$("body").attr('data-con-measures', $('#print-cons').is(':checked'));
-				$("#print-title-map").html(modalSandbox.find("#print-title").val());
-				$("#print-subtitle-map").html(modalSandbox.find("#print-subtitle").val());
-				if ($("#print-subtitle").val().length === 0) {
+				console.debug('Marine Risk Explorer; main.js; postPrintModal()');
+				//set values in the 'print_template' as they were set in the 'print_setup' template.
+				var title = $('#plugin-print-modal-content').find('#print-title').val();
+				$("#print-title-map").html(title);				
+				var subTitle = $('#plugin-print-modal-content').find('#print-subtitle').val();
+				if(!subTitle){
 					$('.title-sep').hide();
+				} else if (subTitle.length === 0) {
+					$('.title-sep').hide();
+				} else {
+					$("#print-subtitle-map").html(subTitle);
 				}
 
-				_.each(this.regionConfig.stats, function(stat) {
-					var icon = stat.icon;
-					var label = stat.label;
-					var units = stat.units;
-					var acres = stat.acres;
-					var statLabel = label.toLowerCase().replace(/ /g, '-').replace(/\//g, '-');
-					var statValue = $('[data-stat=' + statLabel + '] .value').html();
-					var template = _.template(print_stat_template)({
-						icon: icon,
-						label: label,
-						units: units,
-						acres: acres,
-						stat: statValue
-					});
-					$("#print-cons-measures .stats").append(template);
-
+				var roadTemplate = _.template(print_stat_template)({
+					label: this.regionConfig.printInfo.items[0].label,
+					item: this.regionConfig.printInfo.items[0].units + this.$el.find("#metric_costToRoad").html()
 				});
+				$("#print-cons-measures .stats").append(roadTemplate);
+
+				var addyTemplate = _.template(print_stat_template)({
+					label: this.regionConfig.printInfo.items[1].label,
+					item: this.$el.find("#metric_numAddy").html()
+				});
+				$("#print-cons-measures .stats").append(addyTemplate);
+
+				var svTemplate = _.template(print_stat_template)({
+					label: this.regionConfig.printInfo.items[2].label,
+					item: $("#custom-handle").html() //'%' included in the html from custom-handle
+					
+				});
+				$("#print-cons-measures .stats").append(svTemplate);
 
 				$('.legend-layer').addClass('show-extras');
 
@@ -1171,6 +1302,12 @@ define([
                     postModalDeferred.resolve();
                 }, 100);
 			},
+			/** 
+			 * Method: addCommas
+			 * 		// http://stackoverflow.com/questions/2646385/add-a-thousands-separator-to-a-total-with-javascript-or-jquery
+			 * Args:
+			 * 		nStr {type: number or string} - 
+			*/
 			addCommas: function(nStr) {
 			    nStr += '';
 			    var x = nStr.split('.');

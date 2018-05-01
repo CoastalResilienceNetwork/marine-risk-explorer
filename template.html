@@ -5,7 +5,7 @@
 <div class="marine-risk">
 
 	<div class="intro">
-		Intro text.
+		<%= intro %>
 	</div>
 
 	<div class="select-controls">
@@ -34,14 +34,7 @@
 	</div>
 
 	<div class="main-controls">
-
-		<h3><% if (intro) { %>
-			<%= intro %>
-		<% } else { %>
-			Conservation measures for
-		<% } %>
-		<span id="town_name_label"></span></h3>
-
+		<h3><span id="roadsInfoTitle">Coastal Roads Inaccessible to Emergency Services</span></h3>
 		<div class="salt-marsh-control" data-scenario-idx="0">
 			<strong>Sea Level Rise Prediction</strong>
 			<div class="slider-container">
@@ -76,11 +69,11 @@
 							<span class="value"></span> <span class="units"><%= stat.units %></span>
 						</div> -->
 						<div class="description"><%= stat.label %></div>
-						<div class="show-hide"><span class="carrotToggle">Show/Hide Details<img src="" /></span></div>
+						<div class="show-hide"><span class="carrotToggle">Show Details<img src="" /></span></div>
 					</div>
 					<% if (stat.tooltip) { %>
 					<div class="stat-info">
-						<span class="fa fa-info-circle info" title="<%= stat.tooltip %>"></span>
+						<span id="svTooltip" class="fa fa-info-circle info" title="<%= stat.tooltip %>"></span>
 					</div>
 					<% } %>
 
@@ -91,7 +84,11 @@
 								<% if (cat.position === "left") { %>
 									<li class="cat-label"><%= cat.label %></li>	
 									<% _.each(cat.metrics, function(met) { %>
-										<li><%= met.label %><span> (<span id="metric_<%= met.field %>">--</span><%= met.units %>)</span></li>
+										<% if (met.unitsBeforeValue === true) { %>	
+											<li><%= met.label %><span> (<%= met.units %><span id="metric_<%= met.field %>">--</span>)</span></li>
+										<% } else { %>
+											<li><%= met.label %><span> (<span id="metric_<%= met.field %>">--</span><%= met.units %>)</span></li>
+										<% } %>			
 									<% }); %>		
 								<% } %>
 							<% }); %>
@@ -103,7 +100,11 @@
 								<% if (cat.position === "right") { %>
 									<li class="cat-label"><span class="icon <%= cat.icon %>"></span> <%= cat.label %></li>	
 									<% _.each(cat.metrics, function(met) { %>
-										<li><%= met.label %><span> (<span id="metric_<%= met.field %>">--</span><%= met.units %>)</span></li>
+										<% if (met.unitsBeforeValue === true) { %>	
+											<li><%= met.label %><span> (<%= met.units %><span id="metric_<%= met.field %>">--</span>)</span></li>
+										<% } else { %>
+											<li><%= met.label %><span> (<span id="metric_<%= met.field %>">--</span><%= met.units %>)</span></li>
+										<% } %>
 									<% }); %>		
 								<% } %>
 							<% }); %>
@@ -156,14 +157,14 @@
 				<div class="check"></div>
 				<span class="form-text">Road-Stream Crossing Barriers</span> 
 			</label>
-			<span class="fa fa-info-circle info" title="Displays surveyed road crossings that have been identified as potential stream barriers within 300 feet of selected parcels. (Check the Road-Stream Crossing Barriers box below to view this information.)"></span>
-			<div class="transparency-control" data-layer="road_stream_crossing" data-opacity="100">
+			<span class="fa fa-info-circle info" title="Displays surveyed road crossings that have been identified as potential stream barriers within 300 feet of selected parcels."></span>
+			<!-- <div class="transparency-control" data-layer="road_stream_crossing" data-opacity="100">
 				<span class="transparency-header">Transparency</span>
 				<div class="transparency-label"><span class="value">100%</span></div>
 				<div class="transparency-slider">
 					<div class="slider"></div>
 				</div>
-			</div>
+			</div> -->
 		</div>
 		<% } %>
 
