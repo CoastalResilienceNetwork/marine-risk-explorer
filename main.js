@@ -119,7 +119,7 @@ define([
 					SimpleFillSymbol.STYLE_SOLID,
 					new SimpleLineSymbol(
 						SimpleLineSymbol.STYLE_SOLID,
-						new Color([175,175,175,1]), //color
+						new Color([255,204,0,1]), //color
 						5 //width
 					),
 					new Color([255, 255, 255, 0]) //white, completely transparent
@@ -130,7 +130,7 @@ define([
 					new SimpleLineSymbol(
 						SimpleLineSymbol.STYLE_SOLID,
 						new Color([235,235,235 ,1]), //color
-						2 //width
+						3 //width
 					),
 					new Color([255, 255, 255, 0]) //white, completely transparent
 				);
@@ -164,6 +164,15 @@ define([
 						this.map.addLayer(this.layers.lidar);
 					}
 					//DYNAMIC MAP SERVICE LAYERS
+
+					//Sea Level
+					// if (this.regionConfig.service && !this.layers.seaLevelRise) {
+					// 	this.layers.seaLevelRise = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
+					// 		id: 'seaLevelRise'
+					// 	});
+					// 	this.layers.seaLevelRise.setVisibleLayers([this.regionConfig.scenarios[0].layer]);
+					// 	this.map.addLayer(this.layers.seaLevelRise);
+					// }
 					//All layers
 					if (this.regionConfig.service && !this.layers.coastalRisk) {
 						this.layers.coastalRisk = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
@@ -173,14 +182,7 @@ define([
 						this.layers.coastalRisk.setVisibleLayers(this.regionConfig.visibleLayerGroups.default);
 						this.map.addLayer(this.layers.coastalRisk);
 					}
-					//Sea Level
-					if (this.regionConfig.service && !this.layers.seaLevelRise) {
-						this.layers.seaLevelRise = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
-							id: 'seaLevelRise'
-						});
-						this.layers.seaLevelRise.setVisibleLayers([this.regionConfig.scenarios[0].layer]);
-						this.map.addLayer(this.layers.seaLevelRise);
-					}
+
 
 					//Road Stream Crossing
 					if (this.regionConfig.service && !this.layers.roadStreamCrossing) {
@@ -449,6 +451,9 @@ define([
 			bindEvents: function() {
 				console.debug('Marine Risk Explorer; main.js; bindEvents()');
 				var self = this;
+				this.$el.find('.info').tooltip({
+
+				});
 				//map and layer events
 				var townsOnMouseOver = this.layers.townFL.on('mouse-over', lang.hitch(this,function(evt) {
 					//console.debug("towns mouse-over!");
@@ -896,17 +901,19 @@ define([
 				try{
 					console.debug('Marine Risk Explorer; main.js; setMarshScenario() idx=', idx);
 					this.idx = idx;
-					var layerIds = this.regionConfig.scenarios.map(function(scenario) {
-						return scenario.layer;
-					});
-					if (this.regionConfig.scenariosAdditive) {
-						console.debug('sea level layers are additive');
-						this.layers.seaLevelRise.setVisibleLayers(layerIds.slice(0, idx + 1));
-					} else {
-						console.debug('sea level layers are not additive');
-						this.layers.seaLevelRise.setVisibleLayers([layerIds[idx]]);
-					}
-					this.layers.seaLevelRise.refresh();
+
+					// var layerIds = this.regionConfig.scenarios.map(function(scenario) {
+					// 	return scenario.layer;
+					// });
+					// if (this.regionConfig.scenariosAdditive) {
+					// 	console.debug('sea level layers are additive');
+					// 	this.layers.seaLevelRise.setVisibleLayers(layerIds.slice(0, idx + 1));
+					// } else {
+					// 	console.debug('sea level layers are not additive');
+					// 	this.layers.seaLevelRise.setVisibleLayers([layerIds[idx]]);
+					// }
+					// this.layers.seaLevelRise.refresh();
+
 					//update other visible layers based on sea level setting
 					var lyrAry = null;
 					switch(idx){
@@ -948,10 +955,10 @@ define([
 			 * 		seaLevelIndex {type: number} - Sea Level slider index position
 			*/		
 			updateMetrics: function(categroy, seaLevelIndex){
-				console.debug('Marine Risk Explorer; main.js; updateMetrics() for ' + categroy);
-				console.debug('sea level idx: ', seaLevelIndex);
+				console.debug('Marine Risk Explorer; main.js; updateMetrics()');
+				//console.debug('sea level idx: ', seaLevelIndex);
 				var roadBGValue = null, addyBGValue = null, roadTwnValue = null, addyTwnValue = null, valRaw = null, val = null, 
-					lastVal = 0, highValFieldName = null, svToolTipString = '';
+					highVal = 0, highValFieldName = null, svToolTipString = '', valWithSuffix = '';
 				try{
 					switch(categroy){
 						case 'town':
@@ -962,10 +969,12 @@ define([
 								//$('#town_name_label').html('Town of ' + this.currentTown.data[this.regionConfig.townsLayer_NameField]);
 
 								//Social Vulnerability Ranking and Score Details - display all as %
-								val = this.currentTown.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100;
-								$("#sv_slider").slider("value", parseFloat(Math.round(val * 100) / 100).toFixed(0));
-								$("#custom-handle").html(parseFloat(Math.round(val * 100) / 100).toFixed(0) + '%');
-								svToolTipString = "The town of "+this.currentTown.data[this.regionConfig.townsLayer_NameField]+" is in the "+parseFloat(Math.round(val * 100) / 100).toFixed(0)+"th percentile and is more vulnerable than "+parseFloat(Math.round(val * 100) / 100).toFixed(0)+"% of other coastal Maine towns.";
+								valRaw = this.currentTown.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100;
+								val = parseFloat(Math.round(valRaw * 100) / 100).toFixed(0);
+								$("#sv_slider").slider("value", val);
+								$("#custom-handle").html(val + '%');
+								valWithSuffix = this.ordinalSuffixOf(val);
+								svToolTipString = "The town of "+this.currentTown.data[this.regionConfig.townsLayer_NameField]+" is in the " + valWithSuffix + " percentile and is more vulnerable than " + val + "% of other coastal Maine towns.";
 								$("#svTooltip").attr("title",svToolTipString);
 
 								//detail groups
@@ -977,19 +986,21 @@ define([
 									if (typeof valRaw === 'number'){
 										if(fieldName != "E_PCI"){
 											val = this.currentTown.data[fieldName] * 100;
-											if (val > lastVal){
+											if (val > highVal){
 												highValFieldName = fieldName;
+												highVal = val;
 											}
-											lastVal = val;
+											
 											this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 										} else {
 											this.$el.find("#metric_"+fieldName).html(this.addCommas(this.currentTown.data[fieldName]));
+											this.$el.find("#metric_"+fieldName).parent().parent().addClass('pci');
 										}
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
-								lastVal = 0;
+								highVal = 0;
 								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
 								highValFieldName = null;
 
@@ -997,16 +1008,17 @@ define([
 									valRaw = this.currentTown.data[fieldName];
 									if (typeof valRaw === 'number'){
 										val = this.currentTown.data[fieldName] * 100;
-										if (val > lastVal){
+										if (val > highVal){
 											highValFieldName = fieldName;
+											highVal = val;
 										}
-										lastVal = val;
+										
 										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
-								lastVal = 0;
+								highVal = 0;
 								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
 								highValFieldName = null;
 
@@ -1014,16 +1026,17 @@ define([
 									valRaw = this.currentTown.data[fieldName];
 									if (typeof valRaw === 'number'){
 										val = this.currentTown.data[fieldName] * 100;
-										if (val > lastVal){
+										if (val > highVal){
 											highValFieldName = fieldName;
+											highVal = val;
 										}
-										lastVal = val;
+										
 										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
-								lastVal = 0;
+								highVal = 0;
 								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
 								highValFieldName = null;
 
@@ -1031,19 +1044,18 @@ define([
 									valRaw = this.currentTown.data[fieldName];
 									if (typeof valRaw === 'number'){
 										val = this.currentTown.data[fieldName] * 100;
-										if (val > lastVal){
+										if (val > highVal){
 											highValFieldName = fieldName;
+											highVal = val;
 										}
-										lastVal = val;
+										
 										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
-								lastVal = 0;
 								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
-								highValFieldName = null;
-
+								
 								//set sea level sensitive metrics
 								switch(seaLevelIndex){
 									case 0:
@@ -1094,10 +1106,12 @@ define([
 								//$('#town_name_label').html(this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField]);
 
 								//Social Vulnerability Ranking and Score Details - display all as %
-								val = this.currentBlockGroup.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100;
-								$("#sv_slider").slider("value", parseFloat(Math.round(val * 100) / 100).toFixed(0));
-								$("#custom-handle").html(parseFloat(Math.round(val * 100) / 100).toFixed(0) + '%');
-								svToolTipString = this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField]+" is in the "+parseFloat(Math.round(val * 100) / 100).toFixed(0)+"th percentile and is more vulnerable than "+parseFloat(Math.round(val * 100) / 100).toFixed(0)+"% of other coastal Maine block groups.";
+								valRaw = this.currentBlockGroup.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100;
+								val = parseFloat(Math.round(valRaw * 100) / 100).toFixed(0);
+								$("#sv_slider").slider("value", val);
+								$("#custom-handle").html(val + '%');
+								valWithSuffix = this.ordinalSuffixOf(val);
+								svToolTipString = "The town of "+this.currentBlockGroup.data[this.regionConfig.townsLayer_NameField]+" is in the " + valWithSuffix + " percentile and is more vulnerable than " + val + "% of other coastal Maine towns.";
 								$("#svTooltip").attr("title",svToolTipString);
 
 								//detail groups
@@ -1110,19 +1124,21 @@ define([
 									if (typeof valRaw === 'number'){
 										if(fieldName != "E_PCI"){
 											val = this.currentBlockGroup.data[fieldName] * 100;
-											if (val > lastVal){
+											if (val > highVal){
 												highValFieldName = fieldName;
+												highVal = val;
 											}
-											lastVal = val;
+											
 											this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 										}else{
 											this.$el.find("#metric_"+fieldName).html(this.addCommas(this.currentBlockGroup.data[fieldName]));
+											this.$el.find("#metric_"+fieldName).parent().parent().addClass('pci');
 										}
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
-								lastVal = 0;
+								highVal = 0;
 								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
 								highValFieldName = null;
 
@@ -1130,16 +1146,17 @@ define([
 									valRaw = this.currentBlockGroup.data[fieldName];
 									if (typeof valRaw === 'number'){
 										val = this.currentBlockGroup.data[fieldName] * 100;
-										if (val > lastVal){
+										if (val > highVal){
 											highValFieldName = fieldName;
+											highVal = val;
 										}
-										lastVal = val;
+										
 										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
-								lastVal = 0;
+								highVal = 0;
 								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
 								highValFieldName = null;
 
@@ -1147,16 +1164,17 @@ define([
 									valRaw = this.currentBlockGroup.data[fieldName];
 									if (typeof valRaw === 'number'){
 										val = this.currentBlockGroup.data[fieldName] * 100;
-										if (val > lastVal){
+										if (val > highVal){
 											highValFieldName = fieldName;
+											highVal = val;
 										}
-										lastVal = val;
+										
 										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
-								lastVal = 0;
+								highVal = 0;
 								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
 								highValFieldName = null;
 
@@ -1164,19 +1182,18 @@ define([
 									valRaw = this.currentBlockGroup.data[fieldName];
 									if (typeof valRaw === 'number'){
 										val = this.currentBlockGroup.data[fieldName] * 100;
-										if (val > lastVal){
+										if (val > highVal){
 											highValFieldName = fieldName;
+											highVal = val;
 										}
-										lastVal = val;
+										
 										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
 								}));
-								lastVal = 0;
 								if(highValFieldName) this.$el.find("#metric_"+highValFieldName).parent().parent().addClass('hilite');
-								highValFieldName = null;
-
+								
 								//set sea level sensitive metrics
 								switch(seaLevelIndex){
 									case 0:
@@ -1318,6 +1335,26 @@ define([
 			        x1 = x1.replace(rgx, '$1' + ',' + '$2');
 			    }
 			    return x1 + x2;
+			},
+			/** 
+			 * Method: ordinalSuffixOf
+			 * 		https://stackoverflow.com/questions/13627308/add-st-nd-rd-and-th-ordinal-suffix-to-a-number
+			 * Args:
+			 * 		i {type: } - 
+			*/
+			ordinalSuffixOf: function(i) {
+				var j = i % 10,
+					k = i % 100;
+				if (j == 1 && k != 11) {
+					return i + "st";
+				}
+				if (j == 2 && k != 12) {
+					return i + "nd";
+				}
+				if (j == 3 && k != 13) {
+					return i + "rd";
+				}
+				return i + "th";
 			},
 			/** 
 			 * Method: methodStub

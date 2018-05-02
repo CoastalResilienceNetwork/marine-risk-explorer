@@ -13,7 +13,7 @@
 			<%= townLabel %>:
 			<div class="ui-widget">
 				<select id="combobox">
-					<option></option>
+					<option>-Select Town-</option>
 					<% _.each(towns, function(val, key) { if (val !== "global") {%>
 						<option value="<%= val %>"><%= val %></option>
 					<% }}); %>
