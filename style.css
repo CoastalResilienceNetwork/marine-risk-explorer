@@ -67,6 +67,14 @@
 	padding: 5px 16px;
 	width: 100%;
 }
+.export {
+	flex-direction: row-reverse;
+}
+
+.export .notes {
+	left: 18px;
+	position: absolute;
+}
 
 .select-controls {
 	display: flex;
@@ -293,6 +301,22 @@
 	height: 16px;
 }
 
+
+.marine-risk .stats .stat .panel .stat-transparency {
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	top: 149px;
+	right: -7px;
+}
+
+.marine-risk .stats .stat .stat-info .fa {
+	color: #266f9c;
+	position: relative;
+	top: 0;
+	left: 0;
+	font-size: 16px;
+}
 .marine-risk .stats .stat .twinPanel .stat-info {
 	position: absolute;
 	width: 16px;
@@ -607,14 +631,6 @@
 	top: 23px;
 	left: 4px;
 	font-size: 16px;
-} */
-.export {
-	flex-direction: row-reverse;
-}
-
-/* .export .notes {
-	left: 18px;
-	position: absolute;
 } */
 
 .ui-menu.ui-widget.ui-widget-content.ui-autocomplete.ui-front {

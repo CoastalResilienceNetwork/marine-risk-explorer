@@ -579,9 +579,9 @@ define([
 					TINY.box.show({
 				        animate: true,
 				        url: 'plugins/marine-risk-explorer/notes.html',
-				        fixed: false,
+				        fixed: true,
 				        width: 560,
-				        height: 700
+				        height: 600
 				    });
 				});
 				//save and share handling
