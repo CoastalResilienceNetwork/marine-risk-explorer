@@ -13,7 +13,7 @@
 			<%= townLabel %>:
 			<div class="ui-widget">
 				<select id="combobox">
-					<option>-Select Town-</option>
+					<option><%= townTopOptionText %></option>
 					<% _.each(towns, function(val, key) { if (val !== "global") {%>
 						<option value="<%= val %>"><%= val %></option>
 					<% }}); %>
@@ -56,6 +56,13 @@
 			<% if (stat.type === "multiple") { %>
 				<div class="stat active current-salt-marsh" data-stat="<%= stat.label.toLowerCase().replace(/ /g, '-').replace(/\//g, '-') %>">
 					<div class="chart-holder">
+							<div class="transparency-control" data-layer="coastalRisk" data-opacity="100">
+									<span class="transparency-header">Transparency</span>
+									<div class="transparency-label"><span class="value">100%</span></div>
+									<div class="transparency-slider">
+										<div class="slider"></div>
+									</div>
+								</div>
 						<h3><span id="sv_title">Social Vulnerability Ranking</span></h3>
 						<span class="label-left">Least Vulnerable</span>
 						<span class="label-right">Most Vulnerable</span>
@@ -64,10 +71,6 @@
 						</div>
 					</div>
 					<div class="panel">
-						<!-- <div class="number">
-							<div class="icon <%= stat.icon %>"></div>
-							<span class="value"></span> <span class="units"><%= stat.units %></span>
-						</div> -->
 						<div class="description"><%= stat.label %></div>
 						<div class="show-hide"><span class="carrotToggle">Show Details<img src="" /></span></div>
 					</div>
@@ -76,7 +79,6 @@
 						<span id="svTooltip" class="fa fa-info-circle info" title="<%= stat.tooltip %>"></span>
 					</div>
 					<% } %>
-
 					<div class="statGrid">
 						<div class="statGridColumn statGridColumnLeft">
 							<ul>

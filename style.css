@@ -612,10 +612,10 @@
 	flex-direction: row-reverse;
 }
 
-.export .notes {
+/* .export .notes {
 	left: 18px;
 	position: absolute;
-}
+} */
 
 .ui-menu.ui-widget.ui-widget-content.ui-autocomplete.ui-front {
 	max-height: 350px;

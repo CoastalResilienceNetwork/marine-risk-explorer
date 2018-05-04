@@ -165,24 +165,34 @@ define([
 					}
 					//DYNAMIC MAP SERVICE LAYERS
 
-					//Sea Level
-					// if (this.regionConfig.service && !this.layers.seaLevelRise) {
-					// 	this.layers.seaLevelRise = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
-					// 		id: 'seaLevelRise'
-					// 	});
-					// 	this.layers.seaLevelRise.setVisibleLayers([this.regionConfig.scenarios[0].layer]);
-					// 	this.map.addLayer(this.layers.seaLevelRise);
-					// }
-					//All layers
+
+					//Bottom Layer Group
 					if (this.regionConfig.service && !this.layers.coastalRisk) {
 						this.layers.coastalRisk = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
 							id: 'coastalRisk'
 						});
 						
-						this.layers.coastalRisk.setVisibleLayers(this.regionConfig.visibleLayerGroups.default);
+						this.layers.coastalRisk.setVisibleLayers(this.regionConfig.visibleLayerGroupsBottom);
 						this.map.addLayer(this.layers.coastalRisk);
 					}
 
+					//Sea Level
+					if (this.regionConfig.service && !this.layers.seaLevelRise) {
+						this.layers.seaLevelRise = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
+							id: 'seaLevelRise'
+						});
+						this.layers.seaLevelRise.setVisibleLayers([this.regionConfig.scenarios[0].layer]);
+						this.map.addLayer(this.layers.seaLevelRise);
+					}
+
+					//Top layer group
+					if (this.regionConfig.service && !this.layers.coastalRiskTop) {
+						this.layers.coastalRiskTop = new ArcGISDynamicMapServiceLayer(this.regionConfig.service, {
+							id: 'coastalRiskTop'
+						});
+						this.layers.coastalRiskTop.setVisibleLayers(this.regionConfig.visibleLayerGroupsTop.default);
+						this.map.addLayer(this.layers.coastalRiskTop);
+					}
 
 					//Road Stream Crossing
 					if (this.regionConfig.service && !this.layers.roadStreamCrossing) {
@@ -212,7 +222,7 @@ define([
 						this.map.addLayer(this.layers.selectedBlockGroupGraphics);
 					}
 
-					this.layers.townFL = new FeatureLayer(this.regionConfig.service + '/' + this.regionConfig.townsLayer_ServiceIndex, {
+					this.layers.townFL = new FeatureLayer(this.regionConfig.service + '/' + this.regionConfig.townsHoverLayer_ServiceIndex, {
 						mode: FeatureLayer.MODE_SNAPSHOT,
 						outFields: ['OBJECTID']
 					});
@@ -247,6 +257,7 @@ define([
 					intro: this.regionConfig.intro,
 					townLabel: this.regionConfig.townLabel,
 					globalRegion: this.regionConfig.globalRegion,
+					townTopOptionText: self.regionConfig.townTopOptionText,
 					towns: this.townNames,
 					region: this.region,
 					reportItems: this.regionConfig.report.items, 
@@ -291,23 +302,32 @@ define([
 								this._trigger( "select", event, {
 									item: ui.item.option
 								});
-								var qt = new QueryTask(self.regionConfig.service + '/' +self.regionConfig.townsLayer_ServiceIndex);
-								var q = new Query();
-								q.where = self.regionConfig.townsLayer_NameField + " = '" + ui.item.option.value + "'";
-								q.outFields = ['*'];
-								q.returnGeometry = true;
-								qt.execute(q, lang.hitch(self,function(featSet){
-									//console.debug('query task success:', featSet);
-									if(featSet.features.length >= 1){
-										self.setCurrentBlockGroup({});
-										self.clearSelectedBlockGroupGraphics();
-										self.setCurrentTown(featSet.features[0]);
-										self.zoomToTown(featSet.features[0]);
-										self.updateMetrics('town', self.$el.find("#salt-marsh-slider").slider("value"));
-									}
-								}), lang.hitch(self,function(err){
-									console.error('query task error:',err);
-								}));
+								if (ui.item.option.value === self.regionConfig.townTopOptionText){
+									//need to clear all data
+									self.setCurrentBlockGroup({});
+									self.setCurrentTown({});
+									self.clearSelectedBlockGroupGraphics();
+									self.clearSelectedTownGraphics();
+									self.updateMetrics('',0);
+								} else {
+									var qt = new QueryTask(self.regionConfig.service + '/' +self.regionConfig.townsLayer_ServiceIndex);
+									var q = new Query();
+									q.where = self.regionConfig.townsLayer_NameField + " = '" + ui.item.option.value + "'";
+									q.outFields = ['*'];
+									q.returnGeometry = true;
+									qt.execute(q, lang.hitch(self,function(featSet){
+										//console.debug('query task success:', featSet);
+										if(featSet.features.length >= 1){
+											self.setCurrentBlockGroup({});
+											self.clearSelectedBlockGroupGraphics();
+											self.setCurrentTown(featSet.features[0]);
+											self.zoomToTown(featSet.features[0]);
+											self.updateMetrics('town', self.$el.find("#salt-marsh-slider").slider("value"));
+										}
+									}), lang.hitch(self,function(err){
+										console.error('query task error:',err);
+									}));
+								}
 							},
 							autocompletechange: "_removeIfInvalid"
 						});
@@ -559,7 +579,7 @@ define([
 					TINY.box.show({
 				        animate: true,
 				        url: 'plugins/marine-risk-explorer/notes.html',
-				        fixed: true,
+				        fixed: false,
 				        width: 560,
 				        height: 700
 				    });
@@ -902,40 +922,40 @@ define([
 					console.debug('Marine Risk Explorer; main.js; setMarshScenario() idx=', idx);
 					this.idx = idx;
 
-					// var layerIds = this.regionConfig.scenarios.map(function(scenario) {
-					// 	return scenario.layer;
-					// });
-					// if (this.regionConfig.scenariosAdditive) {
-					// 	console.debug('sea level layers are additive');
-					// 	this.layers.seaLevelRise.setVisibleLayers(layerIds.slice(0, idx + 1));
-					// } else {
-					// 	console.debug('sea level layers are not additive');
-					// 	this.layers.seaLevelRise.setVisibleLayers([layerIds[idx]]);
-					// }
-					// this.layers.seaLevelRise.refresh();
+					var layerIds = this.regionConfig.scenarios.map(function(scenario) {
+						return scenario.layer;
+					});
+					if (this.regionConfig.scenariosAdditive) {
+						console.debug('sea level layers are additive');
+						this.layers.seaLevelRise.setVisibleLayers(layerIds.slice(0, idx + 1));
+					} else {
+						console.debug('sea level layers are not additive');
+						this.layers.seaLevelRise.setVisibleLayers([layerIds[idx]]);
+					}
+					this.layers.seaLevelRise.refresh();
 
 					//update other visible layers based on sea level setting
 					var lyrAry = null;
 					switch(idx){
 						case 0:
-							lyrAry = this.regionConfig.visibleLayerGroups.default;
+							lyrAry = this.regionConfig.visibleLayerGroupsTop.default;
 							break;
 						case 1:
-							lyrAry = this.regionConfig.visibleLayerGroups.oneFoot;
+							lyrAry = this.regionConfig.visibleLayerGroupsTop.oneFoot;
 							break;
 						case 2:
-							lyrAry = this.regionConfig.visibleLayerGroups.twoFoot;
+							lyrAry = this.regionConfig.visibleLayerGroupsTop.twoFoot;
 							break;
 						case 3:
-							lyrAry = this.regionConfig.visibleLayerGroups.threeFoot;
+							lyrAry = this.regionConfig.visibleLayerGroupsTop.threeFoot;
 							break;
 						case 4:
-							lyrAry = this.regionConfig.visibleLayerGroups.sixFoot;
+							lyrAry = this.regionConfig.visibleLayerGroupsTop.sixFoot;
 							break;
 					}
-					console.debug(lyrAry);
-					this.layers.coastalRisk.setVisibleLayers(lyrAry);
-					this.layers.coastalRisk.refresh();
+					//console.debug(lyrAry);
+					this.layers.coastalRiskTop.setVisibleLayers(lyrAry);
+					this.layers.coastalRiskTop.refresh();
 					//update data - if currentBlockGroup.data has an objedtid property, assume we are looking at a blockgroup, otherwise town
 					console.debug('currentBlockGroup.data.hasOwnProperty("OBJECTID")?: ', this.currentBlockGroup.data.hasOwnProperty("OBJECTID"));
 					if(this.currentBlockGroup.hasOwnProperty("data") && this.currentBlockGroup.data.hasOwnProperty("OBJECTID")){
@@ -1247,7 +1267,10 @@ define([
 							}
 							break;
 						default:
-							console.error('Error: invalid category.');
+							console.error('Error: invalid category. Clearing data');
+							$("[id^=metric]").html('--'); //clear all value spans that have ids starting with 'metric'
+							$("#sv_slider").slider("value", 0); //reset the slider
+							$("#custom-handle").html('0'); //reset the slider custom handle text
 							return;
 					}
 				}catch (ex){
