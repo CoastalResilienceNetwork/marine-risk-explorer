@@ -221,7 +221,9 @@
 	flex-direction: row;
 	/*padding-right: 9px;*/
 }
-
+.stats.riskStats {
+	padding-right: 16px;
+}
 .marine-risk .stats .stat {
 	/*position: relative;
 	margin: 5px 0;
@@ -484,7 +486,7 @@
 	width: calc(100% - 36px);
 }
  .custom-combobox-toggle {
-	position: absolute;
+	position: absolute !important;
 	top: 0;
 	bottom: 0;
 	margin-left: -1px;

@@ -1131,7 +1131,7 @@ define([
 								$("#sv_slider").slider("value", val);
 								$("#custom-handle").html(val + '%');
 								valWithSuffix = this.ordinalSuffixOf(val);
-								svToolTipString = "The town of "+this.currentBlockGroup.data[this.regionConfig.townsLayer_NameField]+" is in the " + valWithSuffix + " percentile and is more vulnerable than " + val + "% of other coastal Maine towns.";
+								svToolTipString = this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField] +" in the town of " + this.currentTown.data[this.regionConfig.townsLayer_NameField] +" is in the " + valWithSuffix + " percentile and is more vulnerable than " + val + "% of other coastal Maine block groups.";
 								$("#svTooltip").attr("title",svToolTipString);
 
 								//detail groups
