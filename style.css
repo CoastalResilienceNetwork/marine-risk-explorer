@@ -356,6 +356,11 @@
 	margin-right: 26px;
 }
 
+#svLabel-right{
+    position: absolute;
+    right: 0px;
+}
+
 .stat.active.current-salt-marsh #sv_slider {
 	margin: 2px 26px 36px 26px;
 }
