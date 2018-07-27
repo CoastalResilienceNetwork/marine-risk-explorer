@@ -63,25 +63,42 @@
 						</div>
 					</div>
 					<div class="panel">
+                                                <% if (coastal_risk) { %>
+                                                    <div class="layer" id="svCheckBox">
+                                                            <label class="form-component">
+                                                                <input type="checkbox" data-layer="coastalRisk" checked>
+                                                                <div class="check"></div>
+                                                                <span class="form-text">Social Vulnerability Index</span>
+                                                            </label>
+                                                            <span id="svTooltip" class="fa fa-info-circle info" title="<%= stat.tooltip %>"></span>
+                                                            <div id="svTransContrl" class="transparency-control" data-layer="coastalRisk" data-opacity="100">
+                                                                <span class="transparency-header">Transparency</span>
+                                                                <div class="transparency-label"><span class="value">100%</span></div>
+                                                                <div class="transparency-slider">
+                                                                <div class="slider"></div>
+                                                                </div>
+                                                            </div>
+                                                    </div>
+                                                <% } %>
 						<div class="description"><%= stat.label %></div>
 						<div class="show-hide"><span class="carrotToggle">Show Details<img src="" /></span></div>
-						<div class="stat-transparency">
-								<div class="transparency-control" data-layer="coastalRisk" data-opacity="100">
-									<span class="transparency-header">Transparency</span>
-									<div class="transparency-label"><span class="value">100%</span></div>
-									<div class="transparency-slider">
-										<div class="slider"></div>
-									</div>
-								</div>
-							</div>
+<!--                                                <div class="stat-transparency">
+                                                    <div class="transparency-control" data-layer="coastalRisk" data-opacity="100">
+                                                            <span class="transparency-header">Transparency</span>
+                                                            <div class="transparency-label"><span class="value">100%</span></div>
+                                                            <div class="transparency-slider">
+                                                                <div class="slider"></div>
+                                                            </div>
+                                                    </div>
+                                                </div>-->
 					</div>
 					
-					<% if (stat.tooltip) { %>
+<!--					<% if (stat.tooltip) { %>
 					<div class="stat-info">
 						<span id="svTooltip" class="fa fa-info-circle info" title="<%= stat.tooltip %>"></span>
 						
 					</div>
-					<% } %>
+					<% } %>-->
 					
 					<div class="statGrid">
 						<div class="statGridColumn statGridColumnLeft">
@@ -181,8 +198,7 @@
 				<div class="check"></div>
 				<span class="form-text">High-Resolution Topography (LIDAR)</span>
 			</label>
-			 <span class="fa fa-info-circle info" title="Displays visual representation of relative elevations based on high-accuracy measurement technology."></span>
-
+			<span class="fa fa-info-circle info" title="Displays visual representation of relative elevations based on high-accuracy measurement technology."></span>
 			<div class="transparency-control" data-layer="lidar" data-opacity="100">
 				<span class="transparency-header">Transparency</span>
 				<div class="transparency-label"><span class="value">100%</span></div>

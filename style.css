@@ -366,6 +366,25 @@
 	background-image: none;
 	background-color: #0c9bd9;
 }
+
+#svTooltip{
+    color: #266f9c;
+    font-size:16px;
+    position: absolute;
+    right: 6px;
+    
+}
+
+#svTransContrl{
+    position: absolute;
+    margin-top: -1px;
+    margin-right: 20px;
+    margin-bottom:40px;
+}
+
+#svCheckBox{
+    padding-left: 17px;
+}
 #custom-handle {
 	width: 3px;
 	height: 40px;

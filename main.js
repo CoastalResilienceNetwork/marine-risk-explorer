@@ -70,6 +70,7 @@ define([
 			 * 		frameworkParameters {Object} - info about the external framework environment, including the app, map, legendContainer, and more
 			*/
 			initialize: function(frameworkParameters) {
+                            
 				console.debug('Marine Risk Explorer; main.js; initialize()');
 				declare.safeMixin(this, frameworkParameters);
 				this.$el = $(this.container);
@@ -208,11 +209,11 @@ define([
 					//Town graphic layers (important that these are created before the Feature Layer. Otherwise there is mouse-over/mouse-out mayhem for the feature layer, at least in chrome)
 					if(!this.layers.selectedTownGraphics){
 						this.layers.selectedTownGraphics = new esri.layers.GraphicsLayer();
-						this.map.addLayer(this.layers.selectedTownGraphics);
+//						this.map.addLayer(this.layers.selectedTownGraphics);
 					}
 					if(!this.layers.townGraphics){
 						this.layers.townGraphics = new esri.layers.GraphicsLayer({
-							//maxScale: 36111.911040
+							maxScale: 36111.911040
 						});
 						this.map.addLayer(this.layers.townGraphics);
 					}
@@ -245,6 +246,7 @@ define([
 			 * 		
 			*/
 			render: function() {
+                    
 				console.debug('Marine Risk Explorer; main.js; render()');
 				var self = this;
 
@@ -265,7 +267,9 @@ define([
 					current_conservation_lands: Number.isInteger(this.regionConfig.current_conservation_lands),
 					wildlife_habitat: Number.isInteger(this.regionConfig.wildlife_habitat),
 					non_tidal_wetlands: Number.isInteger(this.regionConfig.non_tidal_wetlands),
-					road_stream_crossing: Number.isInteger(this.regionConfig.roadStreamCrossing_ServiceIndex)
+					road_stream_crossing: Number.isInteger(this.regionConfig.roadStreamCrossing_ServiceIndex),
+                                        coastal_risk: Number.isInteger(this.regionConfig.coastalRisk_ServiceIndex)
+                                        
                 }));
 
 				//Town picker drop down list, jquery autocomplete (as combobox);
@@ -452,9 +456,9 @@ define([
 					range: 'min',
 					min:0,
 					max:100,
-					create: function() {
-						handle.text( $( this ).slider( "value" ) );
-					},
+//					create: function() {
+//						handle.text( $( this ).slider( "value" ) );
+//					},
 					slide: function( event, ui ) {
 						return false;
 					}
@@ -469,6 +473,7 @@ define([
 			 * 		
 			*/			
 			bindEvents: function() {
+                                    
 				console.debug('Marine Risk Explorer; main.js; bindEvents()');
 				var self = this;
 				this.$el.find('.info').tooltip({
@@ -561,6 +566,7 @@ define([
 				this.$el.find('.layer input').on('change', function(e) {
 					var checked = this.checked;
 					var layer = $(e.target).parents('.layer');
+                                        console.log(layer)
 
 					self.layers[$(this).data('layer')].setVisibility(checked);
 
@@ -765,6 +771,7 @@ define([
 			 * 		town {type: string OR object} - The town arg may be the name of a town, or an esri town Graphic.
 			*/
 			zoomToTown: function(town){
+                            
 				console.debug('Marine Risk Explorer; main.js; zoomToTown()');
 				var argType = typeof town;
 				switch(argType){
@@ -976,6 +983,17 @@ define([
 			*/		
 			updateMetrics: function(categroy, seaLevelIndex){
 				console.debug('Marine Risk Explorer; main.js; updateMetrics()');
+                                
+                                function roundValsGreater1(val){
+                                    if ((parseFloat(val) >0) & (parseFloat(val) <1)){
+                                        roundVal = "<1"
+                                    }
+                                    else{
+                                        roundVal = (parseFloat(Math.round(val * 100) / 100).toFixed(0)).toString()
+                                    }
+                                    return roundVal   
+                                }
+                                
 				//console.debug('sea level idx: ', seaLevelIndex);
 				var roadBGValue = null, addyBGValue = null, roadTwnValue = null, addyTwnValue = null, valRaw = null, val = null, 
 					highVal = 0, highValFieldName = null, svToolTipString = '', valWithSuffix = '';
@@ -990,9 +1008,10 @@ define([
 
 								//Social Vulnerability Ranking and Score Details - display all as %
 								valRaw = this.currentTown.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100;
-								val = parseFloat(Math.round(valRaw * 100) / 100).toFixed(0);
+                                                                val = parseFloat(Math.round(valRaw * 100) / 100).toFixed(0);
+                                                                
 								$("#sv_slider").slider("value", val);
-								$("#custom-handle").html(val + '%');
+//								$("#custom-handle").html(val + '%'); 
 								valWithSuffix = this.ordinalSuffixOf(val);
 								svToolTipString = "The town of "+this.currentTown.data[this.regionConfig.townsLayer_NameField]+" is in the " + valWithSuffix + " percentile and is more vulnerable than " + val + "% of other coastal Maine towns.";
 								$("#svTooltip").attr("title",svToolTipString);
@@ -1005,16 +1024,18 @@ define([
 									valRaw = this.currentTown.data[fieldName];
 									if (typeof valRaw === 'number'){
 										if(fieldName != "E_PCI"){
-											val = this.currentTown.data[fieldName] * 100;
-											if (val > highVal){
-												highValFieldName = fieldName;
-												highVal = val;
-											}
-											
-											this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
-										} else {
-											this.$el.find("#metric_"+fieldName).html(this.addCommas(this.currentTown.data[fieldName]));
-											this.$el.find("#metric_"+fieldName).parent().parent().addClass('pci');
+                                                                                    val = this.currentTown.data[fieldName] * 100;
+                                                                                    if (val > highVal){
+                                                                                        highValFieldName = fieldName;
+                                                                                        highVal = val;
+                                                                                    }
+
+                                                                                   
+                                                                                    this.$el.find("#metric_"+fieldName).html(roundValsGreater1(val));
+										} 
+                                                                                else {
+                                                                                    this.$el.find("#metric_"+fieldName).html(this.addCommas(this.currentTown.data[fieldName]));
+                                                                                    this.$el.find("#metric_"+fieldName).parent().parent().addClass('pci');
 										}
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
@@ -1033,7 +1054,7 @@ define([
 											highVal = val;
 										}
 										
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
+										this.$el.find("#metric_"+fieldName).html(roundValsGreater1(val));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
@@ -1051,7 +1072,7 @@ define([
 											highVal = val;
 										}
 										
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
+										this.$el.find("#metric_"+fieldName).html(roundValsGreater1(val));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
@@ -1069,7 +1090,7 @@ define([
 											highVal = val;
 										}
 										
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
+										this.$el.find("#metric_"+fieldName).html(roundValsGreater1(val));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
@@ -1129,7 +1150,7 @@ define([
 								valRaw = this.currentBlockGroup.data[this.regionConfig.criticalFields.common.socialVulnerabilityRank] * 100;
 								val = parseFloat(Math.round(valRaw * 100) / 100).toFixed(0);
 								$("#sv_slider").slider("value", val);
-								$("#custom-handle").html(val + '%');
+//								$("#custom-handle").html(val + '%'); 
 								valWithSuffix = this.ordinalSuffixOf(val);
 								svToolTipString = this.currentBlockGroup.data[this.regionConfig.blockGroupLayer_NameField] +" in the town of " + this.currentTown.data[this.regionConfig.townsLayer_NameField] +" is in the " + valWithSuffix + " percentile and is more vulnerable than " + val + "% of other coastal Maine block groups.";
 								$("#svTooltip").attr("title",svToolTipString);
@@ -1149,7 +1170,7 @@ define([
 												highVal = val;
 											}
 											
-											this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
+											this.$el.find("#metric_"+fieldName).html(roundValsGreater1(val));
 										}else{
 											this.$el.find("#metric_"+fieldName).html(this.addCommas(this.currentBlockGroup.data[fieldName]));
 											this.$el.find("#metric_"+fieldName).parent().parent().addClass('pci');
@@ -1171,7 +1192,7 @@ define([
 											highVal = val;
 										}
 										
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
+										this.$el.find("#metric_"+fieldName).html(roundValsGreater1(val));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
@@ -1189,7 +1210,7 @@ define([
 											highVal = val;
 										}
 										
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
+										this.$el.find("#metric_"+fieldName).html(roundValsGreater1(val));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
@@ -1207,7 +1228,7 @@ define([
 											highVal = val;
 										}
 										
-										this.$el.find("#metric_"+fieldName).html(parseFloat(Math.round(val * 100) / 100).toFixed(0));
+										this.$el.find("#metric_"+fieldName).html(roundValsGreater1(val));
 									}else{
 										this.$el.find("#metric_"+fieldName).html('--');
 									}
@@ -1270,7 +1291,7 @@ define([
 							console.error('Error: invalid category. Clearing data');
 							$("[id^=metric]").html('--'); //clear all value spans that have ids starting with 'metric'
 							$("#sv_slider").slider("value", 0); //reset the slider
-							$("#custom-handle").html('0'); //reset the slider custom handle text
+//							$("#custom-handle").html('0'); //reset the slider custom handle text
 							return;
 					}
 				}catch (ex){
@@ -1331,7 +1352,7 @@ define([
 
 				var svTemplate = _.template(print_stat_template)({
 					label: this.regionConfig.printInfo.items[2].label,
-					item: $("#custom-handle").html() //'%' included in the html from custom-handle
+//					item: $("#custom-handle").html() //'%' included in the html from custom-handle
 					
 				});
 				$("#print-cons-measures .stats").append(svTemplate);
@@ -1379,7 +1400,8 @@ define([
 				}
 				return i + "th";
 			},
-			/** 
+
+                        /** 
 			 * Method: methodStub
 			 * 		
 			 * Args:
