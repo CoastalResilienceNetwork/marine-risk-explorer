@@ -213,7 +213,7 @@ define([
 					}
 					if(!this.layers.townGraphics){
 						this.layers.townGraphics = new esri.layers.GraphicsLayer({
-							maxScale: 36111.911040
+//							maxScale: 36111.911040
 						});
 						this.map.addLayer(this.layers.townGraphics);
 					}
