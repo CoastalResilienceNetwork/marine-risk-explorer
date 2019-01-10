@@ -263,7 +263,7 @@
 	line-height: 130%;
 	margin: 6px 0 13px 0;
 	padding: 0 17px;
-	height: 40px;
+	height: 20px;
 	white-space: normal;
 }
 .marine-risk .stats .stat .twinPanel .number {
@@ -278,28 +278,28 @@
 	font-size: 27px;
 	line-height: 120%;
 }
-.marine-risk .stats .stat .twinPanel .town {
+.marine-risk .stats .stat .twinPanel .block {
 	height: 0px;
-	overflow: hidden;
+/*	overflow: hidden;*/
 	transition: .3s height ease;
 }
-.marine-risk .stats .stat .twinPanel .town.active {
+.marine-risk .stats .stat .twinPanel .block.active {
 	height: 60px;
 	overflow: hidden;
 }
-.marine-risk .stats .stat .twinPanel .town .number {
+.marine-risk .stats .stat .twinPanel .block .number {
 	display: block;
 	border-bottom: 1px solid #ccc;
 	width: calc(100% - 26px);
 	margin: 0 13px;
 	line-height: 25px;
 }
-.marine-risk .stats .stat .twinPanel .town .number .value, .marine-risk .stats .stat .twinPanel .town .number.value .symbol {
+.marine-risk .stats .stat .twinPanel .block .number .value, .marine-risk .stats .stat .twinPanel .block .number.value .symbol {
 	display: inline-block;
 	font-size: 17px;
 	line-height: 140%;
 }
-.marine-risk .stats .stat .twinPanel .town .description {
+.marine-risk .stats .stat .twinPanel .block .description {
 	height: 16px;
 }
 

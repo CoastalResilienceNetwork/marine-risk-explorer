@@ -139,28 +139,30 @@
 			<% } else if (stat.type === "single") { %>
 				<div class="stat active current-salt-marsh twins" data-stat="<%= stat.label.toLowerCase().replace(/ /g, '-').replace(/\//g, '-') %>">
 					<div class="twinPanel">
-						<div class="number">
-							<% if (stat.unitsBeforeValue === true) { %>	
-								<span class="value symbol"><%= stat.units %></span><span id="metric_<%= stat.elId %>" class="value">--</span>
-							<% } else { %>
-								<span id="metric_<%= stat.elId %>" class="value">--</span><span class="value"><%= stat.units %></span>
-							<% } %>
-						</div> 
-						<div class="description"><%= stat.label %></div>
-						<% if (stat.tooltip) { %>
-						<div class="stat-info">
-							<span class="fa fa-info-circle info" title="<%= stat.tooltip %>"></span>
-						</div>
-						<% } %>
-						<div class="town">
-							<div class="number">
-								<% if (stat.unitsBeforeValue === true) { %>	
-									<span class="value symbol"><%= stat.units %></span><span id="metric_<%= stat.elId %>_twn" class="value">--</span>
-								<% } else { %>
-									<span id="metric_<%= stat.elId %>_twn" class="value">--</span><span class="value"><%= stat.units %></span>
-								<% } %>
-							</div> 
-							<div class="description">Town Total</div>
+                                                <div class="description"><%= stat.label %></div>
+                                                <div class="number">
+                                                        <% if (stat.unitsBeforeValue === true) { %>	
+                                                                <span class="value symbol"><%= stat.units %></span><span id="metric_<%= stat.elId %>_twn" class="value">--</span>
+                                                        <% } else { %>
+                                                                <span id="metric_<%= stat.elId %>_twn" class="value">--</span><span class="value"><%= stat.units %></span>
+                                                        <% } %>
+                                                </div> 
+                                                <div class="description">Town Total</div>
+						<div class="block">
+                                                    <div class="number">
+                                                            <% if (stat.unitsBeforeValue === true) { %>	
+                                                                    <span class="value symbol"><%= stat.units %></span><span id="metric_<%= stat.elId %>" class="value">--</span>
+                                                            <% } else { %>
+                                                                    <span id="metric_<%= stat.elId %>" class="value">--</span><span class="value"><%= stat.units %></span>
+                                                            <% } %>
+                                                    </div> 
+                                                    
+                                                    <% if (stat.tooltip) { %>
+                                                    <div class="stat-info">
+                                                            <span class="fa fa-info-circle info" title="<%= stat.tooltip %>"></span>
+                                                    </div>
+                                                    <% } %>
+                                                    <div class="description">Block Group Total</div>
 						</div>
 					</div>
 				</div>
@@ -176,11 +178,11 @@
 		<% if (road_stream_crossing) { %>
 		<div class="layer">
 			<label class="form-component">
-				<input type="checkbox" data-layer="roadStreamCrossing">
+				<input type="checkbox" data-layer="roadStreamCrossing" id="barriersCheck">
 				<div class="check"></div>
 				<span class="form-text">Road-Stream Crossing Barriers</span> 
 			</label>
-			<span class="fa fa-info-circle info" title="Displays surveyed road crossings that have been identified as potential stream barriers within 300 feet of selected parcels."></span>
+			<span class="fa fa-info-circle info" title="Zoom in to display surveyed road crossings that have been identified as potential stream barriers within 300 feet of selected parcels."></span>
 			<!-- <div class="transparency-control" data-layer="road_stream_crossing" data-opacity="100">
 				<span class="transparency-header">Transparency</span>
 				<div class="transparency-label"><span class="value">100%</span></div>
@@ -190,7 +192,17 @@
 			</div> -->
 		</div>
 		<% } %>
+		<% if (roads) { %>
+		<div class="layer">
+			<label class="form-component">
+				<input type="checkbox" data-layer="roads" id="roadsCheck">
+				<div class="check"></div>
+				<span class="form-text">Roads</span> 
+			</label>
+			<span class="fa fa-info-circle info" title="Zoom in to display roads"></span>
+		</div>
 
+		<% } %>
 		<% if (lidar) { %>
 		<div class="layer">
 			<label class="form-component">
@@ -213,7 +225,7 @@
 
 	<div class="export">
 		<button class="button button-default notes">Data Notes</button>
-		<button class="button button-default print">Print Report</button>
+<!--		<button class="button button-default print">Print Report</button>-->
 	</div>
 
 </div>
