@@ -4,7 +4,9 @@ define([
     "dojo/promise/all",
     "framework/PluginBase",
     "esri/layers/ArcGISDynamicMapServiceLayer",
-    "esri/layers/WMSLayer",
+    "esri/layers/ArcGISImageServiceLayer",
+    "esri/layers/ImageServiceParameters", 
+    "esri/layers/RasterFunction",
     "esri/layers/FeatureLayer",
     "esri/geometry/Extent",
     "esri/SpatialReference",
@@ -24,7 +26,9 @@ define([
         all,
         PluginBase,
         ArcGISDynamicMapServiceLayer,
-        WMSLayer,
+        ArcGISImageServiceLayer,
+        ImageServiceParameters,
+        RasterFunction,
         FeatureLayer,
         Extent,
         SpatialReference,
@@ -43,10 +47,10 @@ define([
     return declare(PluginBase, {
         toolbarName: 'Coastal Risk Explorer', //content pane title
         fullName: 'Coastal Risk Explorer', //toolbar hover text
+        allowIdentifyWhenActive: false,    
         resizable: false,
         width: 425,
         size: 'custom',
-        allowIdentifyWhenActive: false,
         layers: {},
         hasCustomPrint: true,
         usePrintModal: true,
@@ -70,6 +74,7 @@ define([
          * 		frameworkParameters {Object} - info about the external framework environment, including the app, map, legendContainer, and more
          */
         initialize: function (frameworkParameters) {
+            allowIdentifyWhenActive = false;
             console.debug('Marine Risk Explorer; main.js; initialize()');
             declare.safeMixin(this, frameworkParameters);
             this.$el = $(this.container);
@@ -164,7 +169,23 @@ define([
                 // NOTE Order added here is important because it is draw order on the map
                 // First in draws below others, etc. Last in draws on top.
                 if (this.regionConfig.lidar && !this.layers.lidar) {
-                    this.layers.lidar = new WMSLayer(this.regionConfig.lidar, {
+                    var params = new ImageServiceParameters();
+                    var rasterFunction = new RasterFunction();
+                    rasterFunction.functionName = "Hillshade";
+                    rasterFunction.arguments = {
+                        "Azimuth":215,
+                        "Altitude":40,
+                        "ZFactor":4,
+                        "HillshadeType":0, //new at 10.5.1.  0 = traditional, 1 = multi-directional; default is 0.
+                        "SlopeType": 1, //new at 10.2. 1=DEGREE, 2=PERCENTRISE, 3=SCALED. default is 1.	
+                        "PSPower": 1,//new at 10.2. double, used together with SCALED slope type	
+                        "PSZFactor" : 1,//new at 10.2. double, used together with SCALED slope type	
+                        "RemoveEdgeEffect":true //new at 10.2. boolean, true of false 	
+                    };
+                    rasterFunction.variableName = "DEM";
+                    params.renderingRule = rasterFunction;
+                    this.layers.lidar = new ArcGISImageServiceLayer(this.regionConfig.lidar, {
+                        imageServiceParameters: params,
                         visible: false,
                         visibleLayers: this.regionConfig.lidarLayers
                     });
@@ -248,7 +269,6 @@ define([
                 // this.setMarshScenario(this.slrIdx);
                 // this.$el.find("#salt-marsh-slider").slider("value", this.slrIdx);
 
-
                 this.render();
             }
 
@@ -261,7 +281,6 @@ define([
          * 		
          */
         render: function () {
-
             console.debug('Marine Risk Explorer; main.js; render()');
             var self = this;
 
@@ -291,7 +310,6 @@ define([
             
             this.map.on("extent-change", lang.hitch(this, function(){
                 //if the layer is not visible eat this scale (from map service) disbale the checkbox
-                console.log(this.map.getScale())
                 if ( this.map.getScale() <100000){
                     $("#barriersCheck").attr("disabled", false);
                     $("#roadsCheck").attr("disabled", false);
@@ -487,9 +505,9 @@ define([
                 range: 'min',
                 min: 0,
                 max: 100,
-//					create: function() {
-//						handle.text( $( this ).slider( "value" ) );
-//					},
+//                create: function() {
+//                        handle.text( $( this ).slider( "value" ) );
+//                },
                 slide: function (event, ui) {
                     return false;
                 }
@@ -501,8 +519,10 @@ define([
             $("#svCheckBox").find("input").trigger("click");
             $(".basemap-selector-list").find("li")[2].click();
 
-            console.log($(".layer-legends"));
-
+//            console.log($(".layer-legends"));
+//            console.log(this.allowIdentifyWhenActive);
+            
+            
         },
         /** 
          * Method: bindEvents
@@ -738,7 +758,7 @@ define([
          */
         hibernate: function () {
             console.debug('Marine Risk Explorer; main.js; hibernate()');
-
+               
             // _.each(Object.keys(this.layers), function(layer) {
             // 	this.map.removeLayer(this.layers[layer]);
             // }, this);
